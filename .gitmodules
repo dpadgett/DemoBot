@@ -1,0 +1,6 @@
+[submodule "OpenJK"]
+	path = OpenJK
+	url = https://github.com/JACoders/OpenJK
+[submodule "cJSON"]
+	path = cJSON
+	url = https://github.com/DaveGamble/cJSON

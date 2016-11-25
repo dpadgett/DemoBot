@@ -1,12 +1,25 @@
-﻿Build started 9/28/2016 12:18:17 AM.
-     1>Project "C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\ServerScanner\ServerScanner.vcxproj" on node 2 (Build target(s)).
+﻿Build started 11/25/2016 12:34:08 AM.
+     1>Project "C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\ServerScanner\ServerScanner.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp" /I"E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\shared" /I"C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\DemoBot" /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\DemoBot\deps.cpp serverscanner.cpp
-         Skipping... (no relevant changes detected)
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I..\OpenJK\codemp /I..\OpenJK\shared /I..\DemoBot /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D _CRT_SECURE_NO_WARNINGS /D _MBCS /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt ..\DemoBot\cl_parse.cpp ..\DemoBot\cmd.cpp ..\DemoBot\cvar.cpp ..\DemoBot\deps.cpp ..\DemoBot\net_ip.cpp ..\OpenJK\codemp\client\cl_net_chan.cpp ..\OpenJK\codemp\qcommon\huffman.cpp ..\OpenJK\codemp\qcommon\msg.cpp ..\OpenJK\codemp\qcommon\net_chan.cpp ..\OpenJK\codemp\qcommon\q_shared.cpp serverscanner.cpp
          serverscanner.cpp
+         q_shared.cpp
+         net_chan.cpp
+         msg.cpp
+         huffman.cpp
+         cl_net_chan.cpp
+         net_ip.cpp
          deps.cpp
+         cvar.cpp
+         cmd.cpp
+         cl_parse.cpp
+         Generating Code...
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I..\OpenJK\codemp /I..\OpenJK\shared /I..\DemoBot /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D _CRT_SECURE_NO_WARNINGS /D _MBCS /D _MBCS /Gm /EHsc /RTC1 /MDd /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TC /analyze- /errorReport:prompt ..\OpenJK\shared\qcommon\q_math.c ..\OpenJK\shared\qcommon\q_string.c
+         q_string.c
+         q_math.c
+         Generating Code...
        Link:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\Debug\ServerScanner.exe" /INCREMENTAL /NOLOGO wsock32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\Debug\ServerScanner.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\Debug\ServerScanner.lib" /MACHINE:X86 Debug\cl_parse.obj
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\Debug\ServerScanner.exe" /INCREMENTAL /NOLOGO wsock32.lib kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\Debug\ServerScanner.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\Debug\ServerScanner.lib" /MACHINE:X86 Debug\cl_parse.obj
          Debug\cmd.obj
          Debug\cvar.obj
          Debug\deps.obj
@@ -16,11 +29,13 @@
          Debug\msg.obj
          Debug\net_chan.obj
          Debug\q_math.obj
+         Debug\q_string.obj
          Debug\q_shared.obj
          Debug\serverscanner.obj
-         ServerScanner.vcxproj -> C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\Debug\ServerScanner.exe
-     1>Done Building Project "C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\ServerScanner\ServerScanner.vcxproj" (Build target(s)).
+         LINK : C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\Debug\ServerScanner.exe not found or not built by the last incremental link; performing full link
+         ServerScanner.vcxproj -> C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\Debug\ServerScanner.exe
+     1>Done Building Project "C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\ServerScanner\ServerScanner.vcxproj" (Build target(s)).
 
 Build succeeded.
 
-Time Elapsed 00:00:00.96
+Time Elapsed 00:00:04.56

@@ -44,7 +44,8 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp;E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\shared;C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\DemoBot</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\OpenJK\codemp;..\OpenJK\shared;..\DemoBot</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -58,7 +59,8 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp;E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\shared;C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\DemoBot</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\OpenJK\codemp;..\OpenJK\shared;..\DemoBot</AdditionalIncludeDirectories>
+      <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <GenerateDebugInformation>true</GenerateDebugInformation>
@@ -73,12 +75,13 @@
     <ClCompile Include="..\DemoBot\cvar.cpp" />
     <ClCompile Include="..\DemoBot\deps.cpp" />
     <ClCompile Include="..\DemoBot\net_ip.cpp" />
-    <ClCompile Include="E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp\client\cl_net_chan.cpp" />
-    <ClCompile Include="E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp\qcommon\huffman.cpp" />
-    <ClCompile Include="E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp\qcommon\msg.cpp" />
-    <ClCompile Include="E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp\qcommon\net_chan.cpp" />
-    <ClCompile Include="E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp\qcommon\q_math.cpp" />
-    <ClCompile Include="E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp\qcommon\q_shared.cpp" />
+    <ClCompile Include="..\OpenJK\codemp\client\cl_net_chan.cpp" />
+    <ClCompile Include="..\OpenJK\codemp\qcommon\huffman.cpp" />
+    <ClCompile Include="..\OpenJK\codemp\qcommon\msg.cpp" />
+    <ClCompile Include="..\OpenJK\codemp\qcommon\net_chan.cpp" />
+    <ClCompile Include="..\OpenJK\shared\qcommon\q_math.c" />
+    <ClCompile Include="..\OpenJK\shared\qcommon\q_string.c" />
+    <ClCompile Include="..\OpenJK\codemp\qcommon\q_shared.cpp" />
     <ClCompile Include="serverscanner.cpp" />
   </ItemGroup>
   <ItemGroup>

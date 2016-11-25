@@ -44,7 +44,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp;E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\shared;C:\Users\dan\Downloads\curl-7.43.0\curl-7.43.0\include;C:\Users\dan\Downloads\cJSONFiles\cJSON</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\OpenJK\codemp;..\OpenJK\shared;C:\Users\dan\Downloads\curl-7.43.0\curl-7.43.0\include;..\cJSON</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CURL_STATICLIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -60,7 +60,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp;E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\shared;C:\Users\dan\Downloads\curl-7.43.0\curl-7.43.0\include;C:\Users\dan\Downloads\cJSONFiles\cJSON</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\OpenJK\codemp;..\OpenJK\shared;C:\Users\dan\Downloads\curl-7.43.0\curl-7.43.0\include;..\cJSON</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>CURL_STATICLIB;_CRT_SECURE_NO_WARNINGS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
     </ClCompile>
@@ -72,18 +72,19 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
-    <ClCompile Include="..\..\..\..\..\Downloads\cJSONFiles\cJSON\cJSON.c" />
+    <ClCompile Include="..\cJSON\cJSON.c" />
     <ClCompile Include="cl_parse.cpp" />
     <ClCompile Include="cmd.cpp" />
     <ClCompile Include="cvar.cpp" />
     <ClCompile Include="demobot.cpp" />
     <ClCompile Include="deps.cpp" />
-    <ClCompile Include="E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp\client\cl_net_chan.cpp" />
-    <ClCompile Include="E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp\qcommon\huffman.cpp" />
-    <ClCompile Include="E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp\qcommon\msg.cpp" />
-    <ClCompile Include="E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp\qcommon\net_chan.cpp" />
-    <ClCompile Include="E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp\qcommon\q_math.cpp" />
-    <ClCompile Include="E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp\qcommon\q_shared.cpp" />
+    <ClCompile Include="..\OpenJK\codemp\client\cl_net_chan.cpp" />
+    <ClCompile Include="..\OpenJK\codemp\qcommon\huffman.cpp" />
+    <ClCompile Include="..\OpenJK\codemp\qcommon\msg.cpp" />
+    <ClCompile Include="..\OpenJK\codemp\qcommon\net_chan.cpp" />
+    <ClCompile Include="..\OpenJK\shared\qcommon\q_math.c" />
+    <ClCompile Include="..\OpenJK\shared\qcommon\q_string.c" />
+    <ClCompile Include="..\OpenJK\codemp\qcommon\q_shared.cpp" />
     <ClCompile Include="net_ip.cpp" />
     <ClCompile Include="utils.cpp" />
   </ItemGroup>
