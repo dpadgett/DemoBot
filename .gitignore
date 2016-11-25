@@ -1,0 +1,4 @@
+*.o
+DemoBot/demobot
+ServerScanner/serverscanner
+ServerScanner/demobot
