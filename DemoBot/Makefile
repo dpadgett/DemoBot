@@ -27,7 +27,7 @@ CC = gcc
 CONFIG = -O3 -DNDEBUG
 #CONFIG = -O0 -g -DNDEBUG
 #CONFIG = -g3 -D_DEBUG
-INCLUDES = -I/home/pi/OpenJK/codemp -I/home/pi/OpenJK/shared -I/home/pi/OpenJK/lib/gsl-lite/include -I/home/pi/OpenJK/lib/minizip/include -I/home/pi/cJSON
+INCLUDES = -I../OpenJK/codemp -I../OpenJK/shared -I../OpenJK/lib/gsl-lite/include -I../OpenJK/lib/minizip/include -I../cJSON
 DEFINES = -DARCH_STRING=\"arm\" -DDEDICATED -DFINAL_BUILD -D_CONSOLE
 OPTIONS = -std=c++11 -Wall -Wno-invalid-offsetof -Wno-write-strings -Wno-comment -fsigned-char -fvisibility=hidden
 FLAGS = $(INCLUDES) $(DEFINES) $(OPTIONS) $(CONFIG)
@@ -70,19 +70,12 @@ $(TARGET):  $(FILES)
 	$(CC) $(FLAGS) -c $< -o $@
 
 cJSON.o:
-	$(CC) $(FLAGS) -c /home/pi/cJSON/cJSON.c -o $@
+	$(CC) $(FLAGS) -c ../cJSON/cJSON.c -o $@
 
-#eval FILE := $(filter %/$@,OJKSRCS)
 $(OJKFILES):
 	$(eval OFILE := $(foreach var,$(OJKSRCS),$(if $(filter $(notdir $(var)),$@),$(var))))
 	$(eval FILE := $(if $(filter shared/%,$(OFILE)),$(patsubst %.o,%.c,$(OFILE)),$(patsubst %.o,%.cpp,$(OFILE))))
-	$(CC) $(FLAGS) -c /home/pi/OpenJK/$(FILE) -o $@
-
-#shared/qcommon/q_math.o shared/qcommon/q_string.o:
-#	$(CC) $(FLAGS) -c /home/pi/OpenJK/$*.c -o $(notdir $@)	
-
-#$(filter-out shared/%.o,$(OJKSRCS)):
-#	$(CC) $(FLAGS) -c /home/pi/OpenJK/codemp/$*.cpp -o $(notdir $@)
+	$(CC) $(FLAGS) -c ../OpenJK/$(FILE) -o $@
 
 # "make clean"
 clean:
