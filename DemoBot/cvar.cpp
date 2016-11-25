@@ -304,7 +304,7 @@ If the variable already exists, the value will not be set unless CVAR_ROM
 The flags will be or'ed in if the variable exists.
 ============
 */
-cvar_t *Cvar_Get( const char *var_name, const char *var_value, uint32_t flags ) {
+cvar_t *Cvar_Get( const char *var_name, const char *var_value, uint32_t flags, const char *var_desc ) {
 	cvar_t	*var;
 	long	hash;
 	int		index;
@@ -395,6 +395,13 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, uint32_t flags ) 
 			Cvar_FreeString( s );
 		}
 
+		if ( var_desc && var_desc[0] != '\0' )
+		{
+			if ( var->description )
+				Cvar_FreeString( var->description );
+			var->description = CopyString( var_desc );
+		}
+
 		// ZOID--needs to be set so that cvars the game sets as
 		// SERVERINFO get sent to clients
 		cvar_modifiedFlags |= flags;
@@ -415,7 +422,9 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, uint32_t flags ) 
 
 	if ( index >= MAX_CVARS )
 	{
-		Com_Error( ERR_FATAL, "Error: Too many cvars, cannot create a new one!" );
+		//if ( !com_errorEntered )
+			Com_Error( ERR_FATAL, "Error: Too many cvars, cannot create a new one!" );
+
 		return NULL;
 	}
 
@@ -426,6 +435,10 @@ cvar_t *Cvar_Get( const char *var_name, const char *var_value, uint32_t flags ) 
 
 	var->name = CopyString( var_name );
 	var->string = CopyString( var_value );
+	if ( var_desc && var_desc[0] != '\0' )
+		var->description = CopyString( var_desc );
+	else
+		var->description = NULL;
 	var->modified = qtrue;
 	var->modificationCount = 1;
 	var->value = atof( var->string );

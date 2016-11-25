@@ -134,16 +134,6 @@ static const char *serverWhitelist[] = {
 };
 
 void SpawnClient( const char* address ) {
-#ifdef _WIN32
-	// Initialize StartupInfo structure
-	STARTUPINFO    StartupInfo;
-	memset( &StartupInfo, 0, sizeof( StartupInfo ) );
-	StartupInfo.cb = sizeof( StartupInfo );
-
-	// This will contain the information about the newly created process
-	PROCESS_INFORMATION ProcessInformation;
-
-	char command[MAX_STRING_CHARS];
 	const char *password = nullptr;
 	const char *rconpassword = nullptr;
 	netadr_t adr;
@@ -166,7 +156,14 @@ void SpawnClient( const char* address ) {
 			}
 		}
 	}
-	Com_sprintf( command, sizeof( command ), "%s %s", "DemoBot.exe", address );
+
+	char command[MAX_STRING_CHARS];
+#ifdef WIN32
+#define DEMOBOT "DemoBot.exe"
+#else
+#define DEMOBOT "./demobot"
+#endif
+	Com_sprintf( command, sizeof( command ), "%s %s", DEMOBOT, address );
 	if ( password != nullptr ) {
 		Q_strcat( command, sizeof( command ), " " );
 		Q_strcat( command, sizeof( command ), password );
@@ -175,6 +172,16 @@ void SpawnClient( const char* address ) {
 			Q_strcat( command, sizeof( command ), rconpassword );
 		}
 	}
+
+#ifdef _WIN32
+	// Initialize StartupInfo structure
+	STARTUPINFO    StartupInfo;
+	memset( &StartupInfo, 0, sizeof( StartupInfo ) );
+	StartupInfo.cb = sizeof( StartupInfo );
+
+	// This will contain the information about the newly created process
+	PROCESS_INFORMATION ProcessInformation;
+
 	BOOL results = CreateProcess( 0, command,
 	                              0, // Process Attributes
 	                              0, // Thread Attributes
@@ -193,6 +200,9 @@ void SpawnClient( const char* address ) {
 	// Cleanup
 	CloseHandle( ProcessInformation.hProcess );
 	CloseHandle( ProcessInformation.hThread );
+#else
+	Q_strcat( command, sizeof( command ), " &" );
+	system(command);
 #endif
 }
 

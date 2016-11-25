@@ -4,6 +4,7 @@
 #include <curl/curl.h>
 #include <vector>
 #include <sstream>
+#include <functional>
 
 #include "deps.h"
 #include "utils.h"
@@ -67,7 +68,7 @@ static int SV_GetPlayerByHandle( const char *handle ) {
 		if ( !playerActive( i ) ) {
 			continue;
 		}
-		const char *cs = cs = cl.gameState.stringData + cl.gameState.stringOffsets[CS_PLAYERS + i];
+		const char *cs = cl.gameState.stringData + cl.gameState.stringOffsets[CS_PLAYERS + i];
 		const char *name = Info_ValueForKey( cs, "n" );
 		if ( !Q_stricmp( name, handle ) ) {
 			return i;
@@ -124,7 +125,7 @@ bool HttpPost( const char* url, const char* data, std::string* payload ) {
 
 	std::stringstream buf;
 	curl_easy_setopt( curl, CURLOPT_WRITEDATA, (void *) &buf ); // Passing our BufferStruct to LC
-	curl_easy_setopt( curl, CURLOPT_WRITEFUNCTION, static_cast<size_t( __cdecl * )( void*, size_t, size_t, void* )>( []( void *ptr, size_t size, size_t nmemb, void *data ) {
+	curl_easy_setopt( curl, CURLOPT_WRITEFUNCTION, static_cast<size_t( QDECL * )( void*, size_t, size_t, void* )>( []( void *ptr, size_t size, size_t nmemb, void *data ) {
 		const char *bdata = static_cast<const char *>( ptr );
 		std::stringstream *buf = static_cast<std::stringstream *>( data );
 		*buf << std::string( bdata, size * nmemb );
@@ -165,12 +166,16 @@ bool getUniqueId( int clientIdx, uint64_t* uniqueId ) {
 	if ( uniqueIdStr == NULL || uniqueIdStr[0] == '\0' ) {
 		return false;
 	}
+#ifdef WIN32
 	*uniqueId = _strtoui64( uniqueIdStr, NULL, 10 );
+#else
+	*uniqueId = strtoull( uniqueIdStr, NULL, 10 );
+#endif
 	return true;
 }
 
 const char *getName( int clientIdx ) {
-	const char *cs = cs = cl.gameState.stringData + cl.gameState.stringOffsets[CS_PLAYERS + clientIdx];
+	const char *cs = cl.gameState.stringData + cl.gameState.stringOffsets[CS_PLAYERS + clientIdx];
 	return Info_ValueForKey( cs, "n" );
 }
 
@@ -635,6 +640,7 @@ void getEloUpdateStr( cJSON *player, eloStruct_t *elo ) {
 	free( (void *)decodedName );
 }
 
+bool stopRecord = false;
 void CG_ParseScores_f( void ) {
 	int redScore = atoi( Cmd_Argv( 2 ) );
 	int blueScore = atoi( Cmd_Argv( 3 ) );
@@ -643,6 +649,10 @@ void CG_ParseScores_f( void ) {
 	const char *cs = cl.gameState.stringData + cl.gameState.stringOffsets[CS_INTERMISSION];
 	if ( atoi( cs ) != 0 ) {
 		//Cmd_EndMatch_f( redScore, blueScore );
+		// stop the demo at this point so that we can get the metadata before map changes
+		//CL_StopRecord_f();
+		// can't stop record right now since this packet hasn't been written to demo yet.
+		stopRecord = true;
 	}
 }
 
@@ -714,11 +724,11 @@ void CG_MapRestart( void ) {
 	//CL_Record_f();
 }
 
-void CG_DemoIndexFinished( void ) {
+void CG_OnDemoFinish( const char *filename ) {
 	Com_Printf( "Demo index finished\n" );
 
 	char demoName[MAX_STRING_CHARS]; // = "/cygdrive/U/demos/demobot/mpctf_manaan 2016-03-22_14-55-21.dm_26";
-	Com_sprintf( demoName, sizeof( demoName ), "/cygdrive/%c%s", clc.demoName[0], &clc.demoName[2] );
+	Com_sprintf( demoName, sizeof( demoName ), "/cygdrive/%c%s", filename[0], &filename[2] );
 
 	UrlEscape( demoName, demoName, sizeof( demoName ) );
 
@@ -779,16 +789,177 @@ void CG_DemoIndexFinished( void ) {
 	cJSON_Delete( root );
 }
 
+void CG_DemoIndexFinished( void ) {
+	CG_OnDemoFinish( clc.demoName );
+}
+
+CURLM *curlm;
+int handle_count;
+
+typedef struct demoUpload_s {
+	CURL *curl;
+	const char *buf;
+	int buflen;
+	bool eos;
+	std::stringstream obuf;
+} demoUpload_t;
+
+std::vector<demoUpload_t *> uploads;
+
+bool CG_StartDemo( const char *name ) {
+	uploads.push_back( new demoUpload_t{} );
+	demoUpload_t *upload = uploads.back();
+
+	upload->curl = curl_easy_init();
+	if ( !upload->curl ) {
+		uploads.pop_back();
+		return false;
+	}
+
+	char url[MAX_STRING_CHARS];
+	char demoName[MAX_STRING_CHARS];
+	UrlEscape( name, demoName, sizeof( demoName ) );
+	Com_sprintf( url, sizeof( url ), "http://demos.jactf.com/upload.php/%s", demoName );
+	Com_Printf( "Url: %s\n", url );
+	curl_easy_setopt( upload->curl, CURLOPT_URL, url );
+	curl_easy_setopt( upload->curl, CURLOPT_UPLOAD, 1L );
+	curl_easy_setopt( upload->curl, CURLOPT_PUT, 1L );
+	curl_easy_setopt( upload->curl, CURLOPT_FOLLOWLOCATION, 1L );
+	upload->eos = false;
+	curl_easy_setopt( upload->curl, CURLOPT_READDATA, (void *) upload );
+	curl_easy_setopt( upload->curl, CURLOPT_READFUNCTION, static_cast<size_t( QDECL * )( char*, size_t, size_t, void* )>( []( char *ptr, size_t size, size_t nmemb, void *data ) {
+		demoUpload_t *upload = static_cast<demoUpload_t *>( data );
+		if ( upload->buflen == 0 ) {
+			if ( upload->eos ) {
+				return (size_t) 0;
+			}
+			//fprintf( stderr, "Pausing...\n" );
+			return (size_t) CURL_READFUNC_PAUSE;
+		}
+		int len = Q_min( upload->buflen, size * nmemb );
+		//fprintf( stderr, "Sending %d bytes\n", len );
+		memcpy( ptr, upload->buf, len );
+		upload->buf = &upload->buf[len];
+		upload->buflen -= len;
+		return (size_t) len;
+	} ) );
+	//curl_easy_setopt( upload->curl, CURLOPT_VERBOSE, 1L );
+
+	curl_easy_setopt( upload->curl, CURLOPT_WRITEDATA, (void *) upload ); // Passing our BufferStruct to LC
+	curl_easy_setopt( upload->curl, CURLOPT_WRITEFUNCTION, static_cast<size_t( QDECL * )( void*, size_t, size_t, void* )>( []( void *ptr, size_t size, size_t nmemb, void *data ) {
+		const char *bdata = static_cast<const char *>( ptr );
+		demoUpload_t *upload = static_cast<demoUpload_t *>( data );
+		upload->obuf << std::string( bdata, size * nmemb );
+		//fprintf( stderr, "Read so far:\n%s\n", upload->obuf.str().c_str() );
+		return size * nmemb;
+	} ) ); // Passing the function pointer to LC
+
+	curl_multi_add_handle( curlm, upload->curl );
+	handle_count++;
+
+	return true;
+}
+
+bool CG_WriteDemoPacket( const char *buf, int buflen ) {
+	demoUpload_t *upload = uploads.back();
+	// first unpause the active upload
+	curl_easy_pause( upload->curl, 0 );
+	// set the new buffer
+	upload->buf = buf;
+	upload->buflen = buflen;
+
+	// flush until buffer is sent
+	int extraloops = 0;
+	while ( handle_count > 0 && (upload->buflen > 0 || extraloops > 0) ) {
+		//fprintf( stderr, "Running multi perform...\n" );
+		/* Perform the request, res will get the return code */
+		//res = curl_easy_perform( curl );
+		CURLMcode mres = curl_multi_perform( curlm, &handle_count );
+
+		/* Check for errors */
+		if ( mres != CURLE_OK ) {
+			fprintf( stderr, "curl_multi_perform() failed: %s\n",
+				curl_multi_strerror( mres ) );
+			curl_easy_cleanup( upload->curl );
+			return false;
+		}
+
+		if ( upload->buflen == 0 ) {
+			extraloops--;
+		}
+	}
+
+	return true;
+}
+
+bool CG_FinishSendingDemo() {
+	demoUpload_t *upload = uploads.back();
+
+	// first fully flush
+	curl_easy_pause( upload->curl, 0 );
+	upload->eos = true;
+	while ( handle_count > 0 ) {
+		//fprintf( stderr, "Running multi perform...\n" );
+		/* Perform the request, res will get the return code */
+		//res = curl_easy_perform( curl );
+		CURLMcode mres = curl_multi_perform( curlm, &handle_count );
+
+		/* Check for errors */
+		if ( mres != CURLE_OK ) {
+			fprintf( stderr, "curl_multi_perform() failed: %s\n",
+				curl_multi_strerror( mres ) );
+			curl_easy_cleanup( upload->curl );
+			return false;
+		}
+	}
+
+	long http_code = 0;
+	curl_easy_getinfo( upload->curl, CURLINFO_RESPONSE_CODE, &http_code );
+	if ( http_code != 200 && http_code != 204 ) {
+		return false;
+	}
+
+	fprintf( stderr, "Payload: %s\n", upload->obuf.str().c_str() );
+	cJSON *root = cJSON_Parse( upload->obuf.str().c_str() );
+	if ( root == nullptr ) {
+		Com_Printf( "Couldn't parse response: %s\n", upload->obuf.str().c_str() );
+	} else {
+		cJSON *file = cJSON_GetObjectItem( root, "file" );
+		const char *filename = file->valuestring;
+		CG_OnDemoFinish( filename );
+	}
+
+
+	/* always cleanup */
+	curl_easy_cleanup( upload->curl );
+
+	uploads.pop_back();
+	delete upload;
+
+	return true;
+}
+
+void CG_InitDemoSaving() {
+	curlm = curl_multi_init();
+}
+
 int main( int argc, char **argv ) {
 	if ( argc < 2 ) {
 		printf( "Usage: %s ip:port\n", argv[0] );
 		return 0;
 	}
 	
-	indexDemo = qtrue;
+	//indexDemo = qtrue;
 	indexFinished = CG_DemoIndexFinished;
 
 	curl_global_init( CURL_GLOBAL_ALL );
+
+	CG_InitDemoSaving();
+
+	demoFolder = "";
+	demoStart = CG_StartDemo;
+	demoStop = CG_FinishSendingDemo;
+	demoWrite = CG_WriteDemoPacket;
 
 	cls.realtime = Com_Milliseconds();
 	int seed = 0;
@@ -867,6 +1038,10 @@ int main( int argc, char **argv ) {
 		if ( Sys_GetPacket( &adr, &netmsg ) ) {
 			lastServerPacketTime = cls.realtime;
 			CL_PacketEvent( adr, &netmsg );
+		}
+		if ( stopRecord ) {
+			CL_StopRecord_f();
+			stopRecord = false;
 		}
 		if ( cls.state == CA_CONNECTED ) {
 			qboolean disconnect = qfalse;

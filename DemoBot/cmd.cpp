@@ -11,10 +11,11 @@ COMMAND EXECUTION
 
 typedef struct cmd_function_s
 {
-	struct cmd_function_s	*next;
-	char					*name;
-	xcommand_t				function;
-	completionFunc_t		complete;
+	struct cmd_function_s   *next;
+	char                                    *name;
+	char                                    *description;
+	xcommand_t                              function;
+	completionFunc_t                complete;
 } cmd_function_t;
 
 
@@ -306,8 +307,8 @@ cmd_function_t *Cmd_FindCommand( const char *cmd_name )
 Cmd_AddCommand
 ============
 */
-void	Cmd_AddCommand( const char *cmd_name, xcommand_t function ) {
-	cmd_function_t	*cmd;
+void	Cmd_AddCommand( const char *cmd_name, xcommand_t function, const char *cmd_desc ) {
+	cmd_function_t  *cmd;
 
 	// fail if the command already exists
 	if ( Cmd_FindCommand( cmd_name ) )
@@ -321,7 +322,11 @@ void	Cmd_AddCommand( const char *cmd_name, xcommand_t function ) {
 
 	// use a small malloc to avoid zone fragmentation
 	cmd = ( struct cmd_function_s * )malloc( sizeof( cmd_function_t ) );
-	cmd->name = (char *) cmd_name; //CopyString( cmd_name );
+	cmd->name = CopyString( cmd_name );
+	if ( VALIDSTRING( cmd_desc ) )
+		cmd->description = CopyString( cmd_desc );
+	else
+		cmd->description = NULL;
 	cmd->function = function;
 	cmd->complete = NULL;
 	cmd->next = cmd_functions;

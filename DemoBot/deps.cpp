@@ -581,10 +581,10 @@ static void CL_SetServerInfo( serverInfo_t *server, const char *info, int ping )
 	if ( server ) {
 		if ( info ) {
 			server->clients = atoi( Info_ValueForKey( info, "clients" ) );
-			Q_strncpyz( server->hostName, Info_ValueForKey( info, "hostname" ), MAX_INFO_VALUE );
-			Q_strncpyz( server->mapName, Info_ValueForKey( info, "mapname" ), MAX_NAME_LENGTH );
+			Q_strncpyz( server->hostName, Info_ValueForKey( info, "hostname" ), sizeof( server->hostName ) );
+			Q_strncpyz( server->mapName, Info_ValueForKey( info, "mapname" ), sizeof( server->mapName ) );
 			server->maxClients = atoi( Info_ValueForKey( info, "sv_maxclients" ) );
-			Q_strncpyz( server->game, Info_ValueForKey( info, "game" ), MAX_NAME_LENGTH );
+			Q_strncpyz( server->game, Info_ValueForKey( info, "game" ), sizeof( server->game ) );
 			server->gameType = atoi( Info_ValueForKey( info, "gametype" ) );
 			server->netType = atoi( Info_ValueForKey( info, "nettype" ) );
 			server->minPing = atoi( Info_ValueForKey( info, "minping" ) );
@@ -1130,6 +1130,11 @@ void CL_SystemInfoChanged( void ) {
 	}
 }
 
+bool CL_WriteDemoPacket( const char *buf, int buflen ) {
+	FS_Write( buf, buflen, clc.demofile );
+	return true;
+}
+
 /*
 ====================
 CL_WriteDemoMessage
@@ -1137,19 +1142,26 @@ CL_WriteDemoMessage
 Dumps the current net message, prefixed by the length
 ====================
 */
+bool( *demoWrite )( const char *buf, int buflen ) = CL_WriteDemoPacket;
 void CL_WriteDemoMessage( msg_t *msg, int headerBytes ) {
 	int		len, swlen;
 
 	// write the packet sequence
 	len = clc.serverMessageSequence;
 	swlen = LittleLong( len );
-	FS_Write( &swlen, 4, clc.demofile );
+	demoWrite( (const char *) &swlen, 4 );
 
 	// skip the packet sequencing information
 	len = msg->cursize - headerBytes;
 	swlen = LittleLong( len );
-	FS_Write( &swlen, 4, clc.demofile );
-	FS_Write( msg->data + headerBytes, len, clc.demofile );
+	demoWrite( (const char *) &swlen, 4 );
+	demoWrite( (const char *) msg->data + headerBytes, len );
+}
+
+bool CL_StopDemo() {
+	FS_FCloseFile( clc.demofile );
+	clc.demofile = 0;
+	return true;
 }
 
 /*
@@ -1159,6 +1171,7 @@ CL_StopRecording_f
 stop recording a demo
 ====================
 */
+bool( *demoStop )( void ) = CL_StopDemo;
 void CL_StopRecord_f( void ) {
 	int		len;
 
@@ -1169,10 +1182,9 @@ void CL_StopRecord_f( void ) {
 
 	// finish up
 	len = -1;
-	FS_Write( &len, 4, clc.demofile );
-	FS_Write( &len, 4, clc.demofile );
-	FS_FCloseFile( clc.demofile );
-	clc.demofile = 0;
+	demoWrite( (const char *) &len, 4 );
+	demoWrite( (const char *) &len, 4 );
+	demoStop();
 	clc.demorecording = qfalse;
 	clc.spDemoRecording = qfalse;
 	Com_Printf( "Stopped demo.\n" );
@@ -1245,6 +1257,14 @@ void CL_IndexDemo( void ) {
 #endif
 }
 
+bool CL_StartDemo( const char *name ) {
+	clc.demofile = FS_FOpenFileWrite( name );
+	if ( !clc.demofile ) {
+		return false;
+	}
+	return true;
+}
+
 /*
 ====================
 CL_Record_f
@@ -1257,6 +1277,7 @@ Begins recording a demo from the current position
 static char		demoName[MAX_QPATH];	// compiler bug workaround
 qboolean		indexDemo = qfalse;		// set to true to index demo as it is saved
 const char *demoFolder = "U:/demos/demobot/";
+bool( *demoStart )( const char *name ) = CL_StartDemo;
 void CL_Record_f( void ) {
 	char		name[MAX_OSPATH];
 	// timestamp the file
@@ -1267,8 +1288,7 @@ void CL_Record_f( void ) {
 	// open the demo file
 
 	Com_Printf( "recording to %s.\n", name );
-	clc.demofile = FS_FOpenFileWrite( name );
-	if ( !clc.demofile ) {
+	if ( !demoStart( name ) ) {
 		Com_Printf( "ERROR: couldn't open.\n" );
 		return;
 	}

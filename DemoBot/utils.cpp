@@ -62,36 +62,64 @@ static const char *utf8_encode( const wchar_t *wstr, int wstrSize )
 }
 
 const wchar_t *utf8BytesToString( const char *utf8 ) {
+	const char *conv = utf8;
 	setlocale( LC_CTYPE, "en_US.UTF-8" );
 	mbstate_t ps;
 	memset( &ps, 0, sizeof( ps ) );
-	size_t size_needed = mbsrtowcs( NULL, &utf8, 0, &ps );
+	size_t size_needed = mbsrtowcs( NULL, &conv, 0, &ps );
 	if ( size_needed == (size_t) -1 ) {
 		perror( "utf8 conversion failed" );
 		return NULL;
 	}
-	wchar_t *strTo = (wchar_t *) malloc( size_needed * sizeof( wchar_t ) );
-	mbsrtowcs( strTo, &utf8, size_needed, &ps );
+	wchar_t *strTo = (wchar_t *) malloc( ( size_needed + 1 ) * sizeof( wchar_t ) );
+	memset( &ps, 0, sizeof( ps ) );
+	conv = utf8;
+	mbsrtowcs( strTo, &conv, size_needed, &ps );
+	strTo[size_needed] = L'\0';
 	return strTo;
 }
 
 const char *cp1252toUTF8( const char *cp1252 )
 {
+	const char *conv = cp1252;
 	setlocale( LC_CTYPE, "en_US.CP1252" );
 	mbstate_t ps;
 	memset( &ps, 0, sizeof( ps ) );
-	size_t size_needed = mbsrtowcs( NULL, &cp1252, 0, &ps );
+	size_t size_needed = mbsrtowcs( NULL, &conv, 0, &ps );
 	if ( size_needed == (size_t) -1 ) {
-		printf( "failure at: %s\n", cp1252 );
+		printf( "failure at: %s: %s\n", cp1252, conv );
 		perror( "cp1252 conversion failed" );
 		return NULL;
 	}
 	wchar_t *strTo = (wchar_t *) malloc( ( size_needed + 1 ) * sizeof( wchar_t ) );
 	memset( &ps, 0, sizeof( ps ) );
-	mbsrtowcs( strTo, &cp1252, size_needed, &ps );
-	strTo[size_needed] = '\0';
+	conv = cp1252;
+	mbsrtowcs( strTo, &conv, size_needed, &ps );
+	strTo[size_needed] = L'\0';
 	const char *result = utf8_encode( strTo, size_needed );
 	free( strTo );
 	return result;
+}
+
+const char *UTF8toCP1252( const char *utf8 )
+{
+	const wchar_t *from = utf8BytesToString( utf8 );
+	const wchar_t *conv = from;
+	setlocale( LC_CTYPE, "en_US.CP1252" );
+	mbstate_t ps;
+	memset( &ps, 0, sizeof( ps ) );
+	size_t size_needed = wcsrtombs( NULL, &conv, 0, &ps );
+	if ( size_needed == (size_t) -1 ) {
+		printf( "failure at: %s: %ls\n", utf8, conv );
+		perror( "cp1252 conversion failed" );
+		return NULL;
+	}
+	char *strTo = (char *) malloc( ( size_needed + 1 ) * sizeof( char ) );
+	memset( &ps, 0, sizeof( ps ) );
+	conv = from;
+	wcsrtombs( strTo, &conv, size_needed, &ps );
+	strTo[size_needed] = '\0';
+	free( (void *)from );
+	return strTo;
 }
 #endif

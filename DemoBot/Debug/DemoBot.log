@@ -1,4 +1,4 @@
-﻿Build started 4/3/2016 2:30:02 AM.
+﻿Build started 5/5/2016 10:25:45 PM.
      1>Project "C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\DemoBot\DemoBot.vcxproj" on node 2 (Build target(s)).
      1>ClCompile:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I"E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\codemp" /I"E:\Users\dan\Downloads\PortableGit-1.7.6-preview20110709\openjk\OpenJK\shared" /I"C:\Users\dan\Downloads\curl-7.43.0\curl-7.43.0\include" /IC:\Users\dan\Downloads\cJSONFiles\cJSON /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D CURL_STATICLIB /D _CRT_SECURE_NO_WARNINGS /D _MBCS /Gm /EHsc /RTC1 /MT /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt demobot.cpp
@@ -26,9 +26,9 @@
      1>libcurl.x86.lib(escape.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'libcurl.x86.lib(escape.obj)' or at 'C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\Debug\vc120.pdb'; linking object as if no debug info
      1>libcurl.x86.lib(easy.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'libcurl.x86.lib(easy.obj)' or at 'C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\Debug\vc120.pdb'; linking object as if no debug info
      1>libcurl.x86.lib(strerror.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'libcurl.x86.lib(strerror.obj)' or at 'C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\Debug\vc120.pdb'; linking object as if no debug info
+     1>libcurl.x86.lib(multi.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'libcurl.x86.lib(multi.obj)' or at 'C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\Debug\vc120.pdb'; linking object as if no debug info
      1>libcurl.x86.lib(warnless.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'libcurl.x86.lib(warnless.obj)' or at 'C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\Debug\vc120.pdb'; linking object as if no debug info
      1>libcurl.x86.lib(mprintf.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'libcurl.x86.lib(mprintf.obj)' or at 'C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\Debug\vc120.pdb'; linking object as if no debug info
-     1>libcurl.x86.lib(multi.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'libcurl.x86.lib(multi.obj)' or at 'C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\Debug\vc120.pdb'; linking object as if no debug info
      1>libcurl.x86.lib(url.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'libcurl.x86.lib(url.obj)' or at 'C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\Debug\vc120.pdb'; linking object as if no debug info
      1>libcurl.x86.lib(connect.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'libcurl.x86.lib(connect.obj)' or at 'C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\Debug\vc120.pdb'; linking object as if no debug info
      1>libcurl.x86.lib(hostip.obj) : warning LNK4099: PDB 'vc120.pdb' was not found with 'libcurl.x86.lib(hostip.obj)' or at 'C:\Users\dan\documents\visual studio 2013\Projects\DemoBot\Debug\vc120.pdb'; linking object as if no debug info
@@ -602,4 +602,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:08.84
+Time Elapsed 00:00:08.45

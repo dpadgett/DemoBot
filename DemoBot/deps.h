@@ -13,3 +13,8 @@ void CL_StopRecord_f( void );
 void CL_Record_f( void );
 extern qboolean indexDemo; // set to true to index demo as it is saved
 extern void( *indexFinished )( void ); // callback called when indexer completes
+extern const char *demoFolder; // folder to save demos to
+
+extern bool( *demoStart )( const char *name ); // called to start a new demo
+extern bool( *demoWrite )( const char *buf, int buflen ); // called to add bytes to the demo file
+extern bool( *demoStop )( void ); // called to flush the current demo and close
