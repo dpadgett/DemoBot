@@ -1,9 +1,12 @@
-﻿Build started 11/25/2016 12:31:49 AM.
-     1>Project "C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\DemoBot\DemoBot.vcxproj" on node 2 (Build target(s)).
+﻿Build started 11/28/2016 1:27:18 AM.
+     1>Project "C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\DemoBot\DemoBot.vcxproj" on node 3 (Build target(s)).
      1>ClCompile:
-         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I..\OpenJK\codemp /I..\OpenJK\shared /I"C:\Users\dan\Downloads\curl-7.43.0\curl-7.43.0\include" /I..\cJSON /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D CURL_STATICLIB /D _CRT_SECURE_NO_WARNINGS /D _MBCS /Gm /EHsc /RTC1 /MT /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TC /analyze- /errorReport:prompt ..\OpenJK\shared\qcommon\q_math.c ..\OpenJK\shared\qcommon\q_string.c
-         q_string.c
-         q_math.c
+         C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\CL.exe /c /I..\OpenJK\codemp /I..\OpenJK\shared /I"C:\Users\dan\Downloads\curl-7.43.0\curl-7.43.0\include" /I..\cJSON /ZI /nologo /W3 /WX- /sdl /Od /Oy- /D CURL_STATICLIB /D _CRT_SECURE_NO_WARNINGS /D _MBCS /Gm /EHsc /RTC1 /MT /GS /fp:precise /Zc:wchar_t /Zc:forScope /Fo"Debug\\" /Fd"Debug\vc120.pdb" /Gd /TP /analyze- /errorReport:prompt cmd.cpp cvar.cpp demobot.cpp deps.cpp utils.cpp
+         utils.cpp
+         deps.cpp
+         demobot.cpp
+         cvar.cpp
+         cmd.cpp
          Generating Code...
        Link:
          C:\Program Files (x86)\Microsoft Visual Studio 12.0\VC\bin\link.exe /ERRORREPORT:PROMPT /OUT:"C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\Debug\DemoBot.exe" /INCREMENTAL /NOLOGO wsock32.lib wldap32.lib ws2_32.lib "C:\Users\dan\Downloads\curl-7.40.0-openssl-libssh2-zlib-x86\libcurl.x86.lib" "C:\Users\dan\Downloads\curl-7.40.0-openssl-libssh2-zlib-x86\libssh2.x86.lib" "C:\Users\dan\Downloads\curl-7.40.0-openssl-libssh2-zlib-x86\openssl.x86.lib" "C:\Users\dan\Downloads\curl-7.40.0-openssl-libssh2-zlib-x86\zlib.x86.lib" kernel32.lib user32.lib gdi32.lib winspool.lib comdlg32.lib advapi32.lib shell32.lib ole32.lib oleaut32.lib uuid.lib odbc32.lib odbccp32.lib /MANIFEST /MANIFESTUAC:"level='asInvoker' uiAccess='false'" /manifest:embed /DEBUG /PDB:"C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\Debug\DemoBot.pdb" /TLBID:1 /DYNAMICBASE /NXCOMPAT /IMPLIB:"C:\Users\dan\Documents\Visual Studio 2013\Projects\DemoBot\Debug\DemoBot.lib" /MACHINE:X86 Debug\cJSON.obj
@@ -605,4 +608,4 @@
 
 Build succeeded.
 
-Time Elapsed 00:00:08.34
+Time Elapsed 00:00:13.51

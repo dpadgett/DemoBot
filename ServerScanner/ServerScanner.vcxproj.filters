@@ -54,6 +54,9 @@
     <ClCompile Include="..\OpenJK\codemp\qcommon\q_shared.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
+    <ClCompile Include="..\cJSON\cJSON.c">
+      <Filter>Source Files</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\DemoBot\deps.h">

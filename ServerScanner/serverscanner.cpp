@@ -4,6 +4,12 @@
 #include "deps.h"
 #include "client/client.h"
 
+#include "cJSON.h"
+
+#include <string>
+#include <fstream>
+#include <streambuf>
+
 #ifdef _WIN32
 #include <windows.h>
 #endif
@@ -105,12 +111,12 @@ static struct connectData_s {
 	const char *address;
 	const char *password;
 	const char *rconpassword;
-} serverPasswords[] = {
-	{ "pug.jactf.com:29071", "ctfpug", "rconpw" },
-	{ "whoracle.jactf.com", "ctfpug", "rconpw" }, //"ctfpug" },
-	{ "whoracle2.jactf.com", "ctfpug", "rconpw" }, //"ctfpug" },
-	{ "sjc.jactf.com:29072", "ctfpug", "rconpw" },
-	{ "akl.jactf.com", "ctfpug", "rconpw" },
+} serverPasswords[256] = {
+	{ "pug.jactf.com:29071", "ctfpug", "" },
+	{ "whoracle.jactf.com", "ctfpug", "" },
+	{ "whoracle2.jactf.com", "ctfpug", "" },
+	{ "sjc.jactf.com:29072", "ctfpug", "" },
+	{ "akl.jactf.com", "ctfpug", "" },
 	{ "23.95.82.67:29070", "wildcard", "" },
 	{ "185.16.85.137:29070", "pureping", "" },
 	{ "50.63.117.75:29071", "pugtime", "" },
@@ -123,14 +129,16 @@ static struct connectData_s {
 	{ "91.121.65.219:12345", "esl", "" },
 	{ "198.23.145.11:29070", "pug", "" },
 	{ "70.90.221.49:29070", "esl", "" },
+	{ nullptr, nullptr, nullptr },
 };
 
-static const char *serverWhitelist[] = {
+static const char *serverWhitelist[256] = {
 	"pug.jactf.com:29071",
 	"whoracle.jactf.com",
 	"whoracle2.jactf.com",
 	"sjc.jactf.com:29072",
 	"akl.jactf.com",
+	nullptr,
 };
 
 void SpawnClient( const char* address ) {
@@ -142,6 +150,9 @@ void SpawnClient( const char* address ) {
 		return;
 	}
 	for ( const auto& serverPassword : serverPasswords ) {
+		if ( serverPassword.address == nullptr ) {
+			break;
+		}
 		netadr_t serverAdr;
 		if ( !NET_StringToAdr( serverPassword.address, &serverAdr ) ) {
 			Com_Printf( "Failed to resolve %s\n", serverPassword.address );
@@ -256,6 +267,9 @@ void FindPopulatedServers( void ) {
 			if ( humans > 0 ) {
 				bool whitelisted = false;
 				for ( const auto& serverAddress : serverWhitelist ) {
+					if ( serverAddress == nullptr ) {
+						break;
+					}
 					netadr_t serverAdr;
 					if ( !NET_StringToAdr( serverAddress, &serverAdr ) ) {
 						Com_Printf( "Failed to resolve %s\n", serverAddress );
@@ -284,6 +298,36 @@ void FindPopulatedServers( void ) {
 }
 
 int main( int argc, char **argv ) {
+	if ( argc > 1 ) {
+		const char *configFile = argv[1];
+		std::ifstream configStream( configFile );
+		std::string config( ( std::istreambuf_iterator<char>( configStream ) ),
+			std::istreambuf_iterator<char>() );
+		cJSON *root = cJSON_Parse( config.c_str() );
+		if ( cJSON_HasObjectItem( root, "serverPasswords" ) ) {
+			cJSON *passwords = cJSON_GetObjectItem( root, "serverPasswords" );
+			for ( int i = 0; i < cJSON_GetArraySize( passwords ); i++ ) {
+				cJSON *obj = cJSON_GetArrayItem( passwords, i );
+				cJSON *address = cJSON_GetObjectItem( obj, "address" );
+				cJSON *password = cJSON_GetObjectItem( obj, "password" );
+				cJSON *rconPassword = cJSON_GetObjectItem( obj, "rconPassword" );
+				int j = 0;
+				for ( ; j < sizeof( serverPasswords ) / sizeof( *serverPasswords ) && serverPasswords[j].address != nullptr; j++ ) {
+					if ( !strcmp( serverPasswords[j].address, address->valuestring ) ) {
+						break;
+					}
+				}
+				if ( serverPasswords[j].address == nullptr ) {
+					serverPasswords[j + 1].address = nullptr;
+				}
+				serverPasswords[j].address = strdup( address->valuestring );
+				serverPasswords[j].password = strdup( password->valuestring );
+				serverPasswords[j].rconpassword = strdup( rconPassword->valuestring );
+			}
+		}
+		cJSON_Delete( root );
+	}
+
 	cls.realtime = Com_Milliseconds();
 	int seed = 0;
 	{

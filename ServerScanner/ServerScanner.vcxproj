@@ -44,7 +44,7 @@
       <WarningLevel>Level3</WarningLevel>
       <Optimization>Disabled</Optimization>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\OpenJK\codemp;..\OpenJK\shared;..\DemoBot</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\OpenJK\codemp;..\OpenJK\shared;..\DemoBot;..\cJSON</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -59,7 +59,7 @@
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <IntrinsicFunctions>true</IntrinsicFunctions>
       <SDLCheck>true</SDLCheck>
-      <AdditionalIncludeDirectories>..\OpenJK\codemp;..\OpenJK\shared;..\DemoBot</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>..\OpenJK\codemp;..\OpenJK\shared;..\DemoBot;..\cJSON</AdditionalIncludeDirectories>
       <PreprocessorDefinitions>_CRT_SECURE_NO_WARNINGS;_MBCS;%(PreprocessorDefinitions)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
@@ -70,6 +70,7 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="..\cJSON\cJSON.c" />
     <ClCompile Include="..\DemoBot\cl_parse.cpp" />
     <ClCompile Include="..\DemoBot\cmd.cpp" />
     <ClCompile Include="..\DemoBot\cvar.cpp" />
