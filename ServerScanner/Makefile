@@ -24,7 +24,7 @@ CC = gcc
 
 
 # Compiler Flags - swap CONFIG for release/debug builds
-CONFIG = -O3 -DNDEBUG
+CONFIG = -O3 -g -DNDEBUG
 #CONFIG = -O0 -g -DNDEBUG
 #CONFIG = -g3 -D_DEBUG
 INCLUDES = -I../OpenJK/codemp -I../OpenJK/shared -I../OpenJK/lib/gsl-lite/include -I../OpenJK/lib/minizip/include -I../cJSON -I../DemoBot
