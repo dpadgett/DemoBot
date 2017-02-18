@@ -1200,7 +1200,8 @@ void CL_DemoFilename( char *buf, int bufSize ) {
 	char timeStr[32] = { 0 }; // should really only reach ~19 chars
 
 	time( &rawtime );
-	strftime( timeStr, sizeof( timeStr ), "%Y-%m-%d_%H-%M-%S", localtime( &rawtime ) ); // or gmtime
+        struct tm * timeinfo = localtime( &rawtime );
+	strftime( timeStr, sizeof( timeStr ), "%Y-%m-%d_%H-%M-%S", timeinfo );
 
 	const char *info = cl.gameState.stringData + cl.gameState.stringOffsets[CS_SERVERINFO];
 	const char *mapname = Info_ValueForKey( info, "mapname" );
@@ -1208,8 +1209,14 @@ void CL_DemoFilename( char *buf, int bufSize ) {
 		mapname = "unknown";
 	}
 
-	Com_sprintf( buf, bufSize, "%s %s", mapname, timeStr );
-	Q_strstrip( buf, "\n\r;:.?*<>|\\/\"", NULL );
+        char fileName[MAX_OSPATH];
+	Com_sprintf( fileName, sizeof( fileName ), "%d %s %s", clc.clientNum, mapname, timeStr );
+	Q_strstrip( fileName, "\n\r;:.?*<>|\\/\"", NULL );
+
+	char folderTreeDate[MAX_OSPATH];
+	strftime( folderTreeDate, sizeof( folderTreeDate ), "%Y/%m/%d", timeinfo );
+
+        Com_sprintf(buf, bufSize, "%s/%s", folderTreeDate, fileName);
 }
 
 #ifdef _WIN32
@@ -1274,7 +1281,7 @@ record <demoname>
 Begins recording a demo from the current position
 ====================
 */
-static char		demoName[MAX_QPATH];	// compiler bug workaround
+static char		demoName[MAX_OSPATH];	// compiler bug workaround
 qboolean		indexDemo = qfalse;		// set to true to index demo as it is saved
 const char *demoFolder = "U:/demos/demobot/";
 bool( *demoStart )( const char *name ) = CL_StartDemo;

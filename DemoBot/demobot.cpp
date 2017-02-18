@@ -122,6 +122,8 @@ bool HttpPost( const char* url, const char* data, std::string* payload ) {
 		curl_easy_setopt( curl, CURLOPT_POSTFIELDS, data );
 	}
 	curl_easy_setopt( curl, CURLOPT_FOLLOWLOCATION, 1L );
+        // No call should take longer than 30 seconds.
+	curl_easy_setopt( curl, CURLOPT_TIMEOUT, 30L );
 
 	std::stringstream buf;
 	curl_easy_setopt( curl, CURLOPT_WRITEDATA, (void *) &buf ); // Passing our BufferStruct to LC
