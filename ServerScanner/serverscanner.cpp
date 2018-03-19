@@ -138,7 +138,7 @@ static const char *serverWhitelist[256] = {
 	"whoracle2.jactf.com",
 	"sjc.jactf.com:29072",
 	"akl.jactf.com",
-	"52.67.65.67",
+	"bra.jactf.com",
 	nullptr,
 };
 
