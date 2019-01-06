@@ -203,7 +203,7 @@ void Cmd_Who_f( const char *name, const char *msg ) {
 	uint64_t mask = ( ( ( (uint64_t) 1 ) << 32 ) - 1 );
 	// TESTING ONLY - sets it to ceasar's id
 	//uniqueId = ( 1560836804LL << 32LL ) | ( 8614LL );
-	Com_sprintf( url, sizeof( url ), "http://demos.jactf.com/playerrpc.php?rpc=searchplayer&id1=%d&id2=%d", static_cast<int>( ( uniqueId >> 32 ) & mask ), static_cast<int>( uniqueId & mask ) );
+	Com_sprintf( url, sizeof( url ), "https://demos.jactf.com/playerrpc.php?rpc=searchplayer&id1=%d&id2=%d", static_cast<int>( ( uniqueId >> 32 ) & mask ), static_cast<int>( uniqueId & mask ) );
 	if ( !HttpGet( url, &payload ) ) {
 		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "say \"Failed to connect to player database\"" );
 		return;
@@ -390,7 +390,7 @@ void Cmd_Elos_f( const char *name, const char *msg ) {
 	}
 
 	std::string payload;
-	const char *url = "http://demos.jactf.com/playerrpc.php?rpc=searchplayer";
+	const char *url = "https://demos.jactf.com/playerrpc.php?rpc=searchplayer";
 	char *data = cJSON_Print( players );
 	cJSON_Delete( players );
 	if ( !HttpPost( url, data, &payload ) ) {
@@ -440,7 +440,7 @@ teamSwitch_t teamSwitch;
 
 void Cmd_Teams_f( const char *name, const char *msg ) {
 	std::stringstream url;
-	url << "http://demos.jactf.com/playerrpc.php?rpc=teams";
+	url << "https://demos.jactf.com/playerrpc.php?rpc=teams";
 	std::vector<int> redPlayers, bluePlayers;
 	for ( int clientIdx = 0; clientIdx < MAX_CLIENTS; clientIdx++ ) {
 		if ( !playerActive( clientIdx ) ) {
@@ -735,7 +735,7 @@ void CG_OnDemoFinish( const char *filename ) {
 	UrlEscape( demoName, demoName, sizeof( demoName ) );
 
 	char url[MAX_STRING_CHARS];
-	Com_sprintf( url, sizeof( url ), "http://demos.jactf.com/minrpc.php?rpc=endmatch&demo=%s", demoName );
+	Com_sprintf( url, sizeof( url ), "https://demos.jactf.com/minrpc.php?rpc=endmatch&demo=%s", demoName );
 
 	std::string payload;
 	if ( !HttpGet( url, &payload ) ) {
@@ -821,7 +821,7 @@ bool CG_StartDemo( const char *name ) {
 	char url[MAX_STRING_CHARS];
 	char demoName[MAX_STRING_CHARS];
 	UrlEscape( name, demoName, sizeof( demoName ) );
-	Com_sprintf( url, sizeof( url ), "http://demos.jactf.com/upload.php/%s", demoName );
+	Com_sprintf( url, sizeof( url ), "https://demos.jactf.com/upload.php/%s", demoName );
 	Com_Printf( "Url: %s\n", url );
 	curl_easy_setopt( upload->curl, CURLOPT_URL, url );
 	curl_easy_setopt( upload->curl, CURLOPT_UPLOAD, 1L );
