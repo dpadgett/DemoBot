@@ -1,5 +1,6 @@
 #include "qcommon/qcommon.h"
 #include "game/bg_public.h"
+#include "client/client.h"
 
 void CL_ConfigstringModified( void );
 void CL_Connect_f( void );
@@ -11,6 +12,7 @@ const char* getPlayerTeamName( int playerIdx );
 void StripColor( char *text );
 void CL_StopRecord_f( void );
 void CL_Record_f( void );
+void CL_InitServerInfo( serverInfo_t *server, netadr_t *address );
 extern qboolean indexDemo; // set to true to index demo as it is saved
 extern void( *indexFinished )( void ); // callback called when indexer completes
 extern const char *demoFolder; // folder to save demos to

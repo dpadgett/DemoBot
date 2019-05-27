@@ -383,6 +383,22 @@ int main( int argc, char **argv ) {
 	Cmd_AddCommand( "disconnect", CL_Disconnect_f );
 	Cmd_AddCommand( "globalservers", CL_GlobalServers_f );
 
+  // Manually prime server list with whitelisted servers, so we still scan
+  // them if master is down
+  for ( const auto& serverAddress : serverWhitelist ) {
+    if ( serverAddress == nullptr ) {
+      break;
+    }
+    netadr_t serverAdr;
+    if ( !NET_StringToAdr( serverAddress, &serverAdr ) ) {
+      Com_Printf( "Failed to resolve %s\n", serverAddress );
+      continue;
+    }
+ 	  serverInfo_t *server = &cls.globalServers[cls.numglobalservers];
+    CL_InitServerInfo( server, &serverAdr );
+    cls.numglobalservers++;
+  }
+  int whitelistedServerCount = cls.numglobalservers;
 
 	int lastMasterScanTime = -99999;
 	int lastServerPacketTime = cls.realtime;
@@ -403,6 +419,8 @@ int main( int argc, char **argv ) {
 			Cmd_ExecuteString( va( "globalservers %d %d full empty", 0, PROTOCOL_VERSION ) );
 			Cmd_ExecuteString( va( "globalservers %d %d full empty", 0, PROTOCOL_VERSION - 1 ) );  // 1.0 servers, some are still there
 			lastMasterScanTime = cls.realtime;
+      // Don't delete our manually added servers
+      cls.numglobalservers = whitelistedServerCount;
 		}
 		CL_UpdateVisiblePings_f( AS_GLOBAL );
 		FindPopulatedServers();
