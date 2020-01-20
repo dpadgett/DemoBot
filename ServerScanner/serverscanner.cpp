@@ -422,6 +422,9 @@ int main( int argc, char **argv ) {
       // Don't delete our manually added servers
       cls.numglobalservers = whitelistedServerCount;
 		}
+    for ( int i = 0; i < whitelistedServerCount; i++ ) {
+      cls.globalServers[i].ping = -1;
+    }
 		CL_UpdateVisiblePings_f( AS_GLOBAL );
 		FindPopulatedServers();
 
