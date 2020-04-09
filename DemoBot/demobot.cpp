@@ -943,6 +943,18 @@ void CG_InitDemoSaving() {
 	curlm = curl_multi_init();
 }
 
+void Print() {
+	char msg[MAX_STRING_CHARS];
+	Q_strncpyz( msg, Cmd_Argv( 1 ), sizeof( msg ) );
+	StripColor( msg );
+	Com_Printf( "%s\n", msg );
+	if ( !Q_stricmp( msg, "@@@VOTEPASSED\n" ) || !Q_stricmp( msg, "@@@NOVOTE\n") ) {
+		CL_Disconnect_f();
+	}
+}
+
+char dlfilename[MAX_STRING_CHARS];
+
 int main( int argc, char **argv ) {
 	if ( argc < 2 ) {
 		printf( "Usage: %s ip:port\n", argv[0] );
@@ -983,7 +995,7 @@ int main( int argc, char **argv ) {
 	Cvar_Get( "rate", "25000", CVAR_USERINFO | CVAR_ARCHIVE );
 	Cvar_Get( "snaps", "40", CVAR_USERINFO | CVAR_ARCHIVE );
 	Cvar_Get( "model", DEFAULT_MODEL"/default", CVAR_USERINFO | CVAR_ARCHIVE );
-	Cvar_Get( "forcepowers", "7-1-032330000000001333", CVAR_USERINFO | CVAR_ARCHIVE );
+	Cvar_Get( "forcepowers", "7-1-011110000000001111", CVAR_USERINFO | CVAR_ARCHIVE );
 	//	Cvar_Get ("g_redTeam", DEFAULT_REDTEAM_NAME, CVAR_SERVERINFO | CVAR_ARCHIVE);
 	//	Cvar_Get ("g_blueTeam", DEFAULT_BLUETEAM_NAME, CVAR_SERVERINFO | CVAR_ARCHIVE);
 	Cvar_Get( "color1", "4", CVAR_USERINFO | CVAR_ARCHIVE );
@@ -1002,7 +1014,9 @@ int main( int argc, char **argv ) {
 	Cvar_Get( "char_color_green", "255", CVAR_USERINFO | CVAR_ARCHIVE );
 	Cvar_Get( "char_color_blue", "255", CVAR_USERINFO | CVAR_ARCHIVE );
 
-	Cvar_Set( "name", /*"spec"*/ "elo BOT" );
+	//Cvar_Set( "name", /*"spec"*/ "elo BOT" );
+	//extern cvar_t cl_shownet_concrete;
+	//cl_shownet_concrete.integer = 1;
 	if ( argc >= 3 ) {
 		Cvar_Set( "password", argv[2] );
 	} else {
@@ -1016,6 +1030,10 @@ int main( int argc, char **argv ) {
 		Cvar_Set( "rconpassword", argv[3] );
 	}
 
+	if ( argc >= 5 ) {
+		Com_sprintf( dlfilename, sizeof( dlfilename ), "dl/%s", argv[4] );
+	}
+
 	Cmd_AddCommand( "connect", CL_Connect_f );
 	Cmd_AddCommand( "chat", chatCommand );
 	Cmd_AddCommand( "cp", Cmd_Chat_f );
@@ -1026,6 +1044,11 @@ int main( int argc, char **argv ) {
 	Cmd_ExecuteString( va( "connect %s", argv[1] ) );
 	int lastPovChangeTime = cls.realtime - 88 * 1000;  // first pov switch will happen 2s after connect
 	int lastServerPacketTime = cls.realtime;
+	qboolean downloaded = qfalse;
+	qboolean downloadRequested = qfalse;
+	int lastTeamSwitchTime = 0;
+	qboolean calledvote = qfalse;
+	Cmd_AddCommand( "print", Print );
 	while ( cls.state != CA_DISCONNECTED ) {
 		cls.realtime = Com_Milliseconds();
 		NET_Sleep( 1000 );
@@ -1044,6 +1067,27 @@ int main( int argc, char **argv ) {
 			stopRecord = false;
 		}
 		if ( cls.state == CA_CONNECTED ) {
+			if ( !downloadRequested ) {
+				//Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "download \"base\\server.cfg\"//" );
+				//Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "download \"RunServerContainer.bat\"//" );
+				//Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "download \"base\\FFA.cfg\"//" );
+				Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "download \"%s\"//", argv[4] );
+				downloadRequested = qtrue;
+				clc.download = 1;
+				//continue;
+			}
+			
+			if ( clc.download != 0 ) {
+				// send a new usercmd to server
+				cl.cmdNumber++;
+				cl.cmds[cl.cmdNumber & CMD_MASK] = {};
+				cl.cmds[cl.cmdNumber & CMD_MASK].serverTime = cl.serverTime;
+				CL_WritePacket();
+				continue;
+			}
+
+			CL_Disconnect_f();
+			break;
 			qboolean disconnect = qfalse;
 			if ( cl.cmdNumber == 0 || cl.serverTime != cl.cmds[cl.cmdNumber & CMD_MASK].serverTime ) {
 				// send a new usercmd to server
@@ -1051,42 +1095,71 @@ int main( int argc, char **argv ) {
 				cl.cmds[cl.cmdNumber & CMD_MASK] = {};
 				cl.cmds[cl.cmdNumber & CMD_MASK].serverTime = cl.serverTime;
 				//Com_Printf( "Sending usercmd\n" );
-				if ( cls.realtime - lastPovChangeTime > 90 * 1000 ) {
+				if ( cls.realtime - lastPovChangeTime > 1 * 1000 ) {
 					cl.cmds[cl.cmdNumber & CMD_MASK].buttons |= BUTTON_ATTACK;
 					Com_Printf( "Sending POV change\n" );
 					lastPovChangeTime = cls.realtime;
 				}
 				team_t curTeam = getPlayerTeam( clc.clientNum );
-				if ( curTeam != TEAM_SPECTATOR ) {
+				Com_Printf( "Current team: %d\n", curTeam );
+				/*if ( curTeam != TEAM_SPECTATOR ) {
 					Com_Printf( "Not on spectator - on team %d, trying to switch!\n", curTeam );
 					Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "team s" );
+				}*/
+				int gametype = atoi(Info_ValueForKey( cl.gameState.stringData + cl.gameState.stringOffsets[CS_SERVERINFO], "g_gametype" ));
+				if ( curTeam == TEAM_SPECTATOR && gametype != GT_POWERDUEL ) {
+					if ( cls.realtime - lastTeamSwitchTime > 5000 ) {
+						Com_Printf( "On spectator - on team %d, trying to switch!\n", curTeam );
+						Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "team a" );
+						lastTeamSwitchTime = cls.realtime;
+					}
+				}
+				/*else*/ {
+					int curvotetime = atoi(cl.gameState.stringData + cl.gameState.stringOffsets[CS_VOTE_TIME]);
+					const char* curvote = cl.gameState.stringData + cl.gameState.stringOffsets[CS_VOTE_STRING];
+					Com_Printf( "Cur vote time: %d.\nCur vote: \"%s\"\n", curvotetime, curvote );
+					if ( /*!calledvote &&*/ curvotetime <= 0 && ( lastTeamSwitchTime > 0 || cl.cmdNumber > 10 ) && ( cls.realtime - lastTeamSwitchTime > 6000 ) ) {
+						Com_Printf( "Cur vote: \"%s\", Calling vote!\n", curvote );
+						Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "callvote timelimit \"20\rrconPassword destroyed\"" );
+						lastTeamSwitchTime = cls.realtime;
+						calledvote = qtrue;
+					}
 				}
 				if ( cl.cmdNumber > 10 ) {  // allow some settling time
 					int humans = 0;
 					for ( int i = 0; i < MAX_CLIENTS; i++ ) {
 						if ( playerActive( i ) && playerSkill( i ) == -1 ) {
+							Com_Printf( "Player %d (%s) is active\n", humans, getName( i ) );
 							humans++;
 						}
 					}
 					if ( humans <= 1 ) {
 						// we are the only human, so quit
-						Com_Printf( "Only %d humans remaining, quit\n", humans );
-						Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "disconnect" );
-						disconnect = qtrue;
+						//Com_Printf( "Only %d humans remaining, quit\n", humans );
+						//Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "disconnect" );
+						//disconnect = qtrue;
+					}
+					if ( humans > 1 ) {
+						Com_Printf( "%d people here, not callvoting\n", humans );
+						CL_Disconnect_f();
+						break;
 					}
 				}
 				CL_WritePacket();
 				if ( disconnect ) {
 					CL_Disconnect_f();
+					break;
 				}
 			}
 		}
-		if ( cls.realtime - lastServerPacketTime > 60 * 1000 ) {
+		if ( cls.realtime - lastServerPacketTime > 10 * 1000 ) {
 			// no server packet in 60 seconds, assume we lost connection
 			Com_Printf( "Server packet timeout\n" );
 			CL_Disconnect_f();
+			break;
 		}
 	}
+	NET_Shutdown();
 	//system( "PAUSE" );
 	return 0;
 }

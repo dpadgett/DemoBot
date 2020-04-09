@@ -390,10 +390,12 @@ void CL_CheckForResend( void ) {
 		port = (int) Cvar_VariableValue( "net_qport" );
 
 		Q_strncpyz( info, Cvar_InfoString( CVAR_USERINFO ), sizeof( info ) );
-		if ( clc.connectPacketCount % 2 == 1 ) {
+		if ( clc.connectPacketCount % 3 == 0 ) {
 			Info_SetValueForKey( info, "protocol", va( "%i", PROTOCOL_VERSION ) );
-		} else {
+		} else if ( clc.connectPacketCount % 3 == 1 ) {
 			Info_SetValueForKey( info, "protocol", va( "%i", PROTOCOL_VERSION - 1 ) );
+		} else {
+			Info_SetValueForKey( info, "protocol", va( "%i", 4007 ) );
 		}
 		Info_SetValueForKey( info, "qport", va( "%i", port ) );
 		Info_SetValueForKey( info, "challenge", va( "%i", clc.challenge ) );
@@ -1304,6 +1306,302 @@ void CL_Record_f( void ) {
 	}
 }
 
+static char *NewClientCommand( void ) {
+	clc.reliableSequence++;
+	return clc.reliableCommands[clc.reliableSequence & ( MAX_RELIABLE_COMMANDS - 1 )];
+}
+
+extern char dlfilename[MAX_STRING_CHARS];
+
+/*
+=====================
+CL_ParseDownload
+
+A download message has been received from the server
+=====================
+*/
+void CL_ParseDownload( msg_t *msg ) {
+	int		size;
+	unsigned char data[MAX_MSGLEN];
+	int block;
+
+	// read the data
+	block = (unsigned short) MSG_ReadShort( msg );
+
+	if ( !block )
+	{
+		// block zero is special, contains file size
+		clc.downloadSize = MSG_ReadLong( msg );
+
+		Com_Printf( "Download size: %d\n", clc.downloadSize );
+
+		if ( clc.downloadSize < 0 )
+		{
+			Com_Printf( "Error: %s\n", MSG_ReadString( msg ) );
+			return;
+		}
+	}
+
+	size = (unsigned short) MSG_ReadShort( msg );
+	if ( size > 0 )
+		MSG_ReadData( msg, data, size );
+
+	if ( clc.downloadBlock != block ) {
+		Com_DPrintf( "CL_ParseDownload: Expected block %d, got %d\n", clc.downloadBlock, block );
+		return;
+	}
+
+	// open the file if not opened yet
+	if ( !clc.download )
+	{
+		/*clc.download = FS_SV_FOpenFileWrite( clc.downloadTempName );
+
+		if ( !clc.download ) {
+			Com_Printf( "Could not create %s\n", clc.downloadTempName );
+			CL_AddReliableCommand( "stopdl" );
+			CL_NextDownload();
+			return;
+		}*/
+	}
+
+	static FILE* fp = NULL;
+	if ( size ) {
+		//FS_Write( data, size, clc.download );
+		if ( fp == NULL ) {
+			fp = fopen( dlfilename, "wb" );
+		}
+		fwrite( data, size, 1, fp );
+		//data[size] = 0;
+		Com_Printf( "Recv: %d of %d bytes (%lld.%02lld%%)\r", clc.downloadCount, clc.downloadSize, ( clc.downloadCount * 10000ll / clc.downloadSize ) / 100ll, ( clc.downloadCount * 10000ll / clc.downloadSize ) % 100ll );
+	}
+
+	//CL_AddReliableCommand( va( "nextdl %d", clc.downloadBlock ) );
+	Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "nextdl %d", clc.downloadBlock );
+	CL_WritePacket();
+	clc.downloadBlock++;
+
+	clc.downloadCount += size;
+
+	if ( !size ) { // A zero length block means EOF
+		if ( clc.download ) {
+			if ( fp != NULL ) { fclose( fp ); }
+			//FS_FCloseFile( clc.download );
+			clc.download = 0;
+
+			// rename the file
+			//FS_SV_Rename( clc.downloadTempName, clc.downloadName );
+			Com_Printf( "Recv completed\n" );
+		}
+		*clc.downloadTempName = *clc.downloadName = 0;
+		//Cvar_Set( "cl_downloadName", "" );
+
+		// send intentions now
+		// We need this because without it, we would hold the last nextdl and then start
+		// loading right away.  If we take a while to load, the server is happily trying
+		// to send us that last block over and over.
+		// Write it twice to help make sure we acknowledge the download
+		CL_WritePacket();
+		CL_WritePacket();
+
+		// get another file if needed
+		//CL_NextDownload();
+	}
+}
+
+void CL_DeltaEntity( msg_t *msg, clSnapshot_t *frame, int newnum, entityState_t *old,
+	qboolean unchanged );
+
+/*
+==================
+CL_ParsePacketEntities
+
+==================
+*/
+void CL_ParsePacketEntities( msg_t *msg, clSnapshot_t *oldframe, clSnapshot_t *newframe ) {
+	int			newnum;
+	entityState_t	*oldstate;
+	int			oldindex, oldnum;
+
+	newframe->parseEntitiesNum = cl.parseEntitiesNum;
+	newframe->numEntities = 0;
+
+	// delta from the entities present in oldframe
+	oldindex = 0;
+	oldstate = NULL;
+	if ( !oldframe ) {
+		oldnum = 99999;
+	}
+	else {
+		if ( oldindex >= oldframe->numEntities ) {
+			oldnum = 99999;
+		}
+		else {
+			oldstate = &cl.parseEntities[
+				( oldframe->parseEntitiesNum + oldindex ) & ( MAX_PARSE_ENTITIES - 1 )];
+			oldnum = oldstate->number;
+		}
+	}
+
+	while ( 1 ) {
+		// read the entity index number
+		newnum = MSG_ReadBits( msg, GENTITYNUM_BITS );
+
+		if ( newnum == ( MAX_GENTITIES - 1 ) ) {
+			break;
+		}
+
+		if ( msg->readcount > msg->cursize ) {
+			Com_Error( ERR_DROP, "CL_ParsePacketEntities: end of message" );
+		}
+
+		while ( oldnum < newnum ) {
+			// one or more entities from the old packet are unchanged
+			if ( cl_shownet->integer == 3 ) {
+				Com_Printf( "%3i:  unchanged: %i\n", msg->readcount, oldnum );
+			}
+			CL_DeltaEntity( msg, newframe, oldnum, oldstate, qtrue );
+
+			oldindex++;
+
+			if ( oldindex >= oldframe->numEntities ) {
+				oldnum = 99999;
+			}
+			else {
+				oldstate = &cl.parseEntities[
+					( oldframe->parseEntitiesNum + oldindex ) & ( MAX_PARSE_ENTITIES - 1 )];
+				oldnum = oldstate->number;
+			}
+		}
+		if ( oldnum == newnum ) {
+			// delta from previous state
+			if ( cl_shownet->integer == 3 ) {
+				Com_Printf( "%3i:  delta: %i\n", msg->readcount, newnum );
+			}
+			CL_DeltaEntity( msg, newframe, newnum, oldstate, qfalse );
+
+			oldindex++;
+
+			if ( oldindex >= oldframe->numEntities ) {
+				oldnum = 99999;
+			}
+			else {
+				oldstate = &cl.parseEntities[
+					( oldframe->parseEntitiesNum + oldindex ) & ( MAX_PARSE_ENTITIES - 1 )];
+				oldnum = oldstate->number;
+			}
+			continue;
+		}
+
+		if ( oldnum > newnum ) {
+			// delta from baseline
+			if ( cl_shownet->integer == 3 ) {
+				Com_Printf( "%3i:  baseline: %i\n", msg->readcount, newnum );
+			}
+			CL_DeltaEntity( msg, newframe, newnum, &cl.entityBaselines[newnum], qfalse );
+			continue;
+		}
+
+	}
+
+	// any remaining entities in the old frame are copied over
+	while ( oldnum != 99999 ) {
+		// one or more entities from the old packet are unchanged
+		if ( cl_shownet->integer == 3 ) {
+			Com_Printf( "%3i:  unchanged: %i\n", msg->readcount, oldnum );
+		}
+		CL_DeltaEntity( msg, newframe, oldnum, oldstate, qtrue );
+
+		oldindex++;
+
+		if ( oldindex >= oldframe->numEntities ) {
+			oldnum = 99999;
+		}
+		else {
+			oldstate = &cl.parseEntities[
+				( oldframe->parseEntitiesNum + oldindex ) & ( MAX_PARSE_ENTITIES - 1 )];
+			oldnum = oldstate->number;
+		}
+	}
+}
+
+/*
+================
+CL_ParseSnapshot
+
+If the snapshot is parsed properly, it will be copied to
+cl.snap and saved in cl.snapshots[].  If the snapshot is invalid
+for any reason, no changes to the state will be made at all.
+================
+*/
+void CL_ParseSnapshot( msg_t *msg ) {
+	int			len;
+	clSnapshot_t	*old;
+	clSnapshot_t	newSnap;
+	int			oldMessageNum;
+	int			i, packetNum;
+
+	cl.serverTime = MSG_ReadLong( msg );
+	//Com_Printf( "new server time: %d\n", cl.serverTime );
+	int deltaNum = MSG_ReadByte( msg );
+	if ( deltaNum > 0 ) {
+		deltaNum = clc.serverMessageSequence - deltaNum;
+	}
+	if ( deltaNum <= 0 ) {
+		clc.demowaiting = qfalse;	// we can start recording now
+	}
+	cl.snap.messageNum = clc.serverMessageSequence;
+
+	// get the reliable sequence acknowledge number
+	// NOTE: now sent with all server to client messages
+	//clc.reliableAcknowledge = MSG_ReadLong( msg );
+
+	// read in the new snapshot to a temporary buffer
+	// we will only copy to cl.snap if it is valid
+	Com_Memset( &newSnap, 0, sizeof( newSnap ) );
+
+	newSnap.deltaNum = deltaNum;
+	newSnap.snapFlags = MSG_ReadByte( msg );
+
+	// If the frame is delta compressed from data that we
+	// no longer have available, we must suck up the rest of
+	// the frame, but not use it, then ask for a non-compressed
+	// message 
+	if ( newSnap.deltaNum <= 0 ) {
+		newSnap.valid = qtrue;		// uncompressed frame
+		old = NULL;
+	}
+	else {
+		old = &cl.snapshots[newSnap.deltaNum & PACKET_MASK];
+	}
+
+	// read areamask
+	len = MSG_ReadByte( msg );
+	MSG_ReadData( msg, &newSnap.areamask, len );
+
+	// read playerinfo
+	if ( old ) {
+		MSG_ReadDeltaPlayerstate( msg, &old->ps, &newSnap.ps );
+		if ( newSnap.ps.m_iVehicleNum )
+		{ //this means we must have written our vehicle's ps too
+			MSG_ReadDeltaPlayerstate( msg, &old->vps, &newSnap.vps, qtrue );
+		}
+	}
+	else {
+		MSG_ReadDeltaPlayerstate( msg, NULL, &newSnap.ps );
+		if ( newSnap.ps.m_iVehicleNum )
+		{ //this means we must have written our vehicle's ps too
+			MSG_ReadDeltaPlayerstate( msg, NULL, &newSnap.vps, qtrue );
+		}
+	}
+
+	// read packet entities
+	CL_ParsePacketEntities( msg, old, &newSnap );
+
+	// if not valid, dump the entire thing now that it has
+	// been properly read
+	return;
+}
+
 /*
 =====================
 CL_ParseServerMessage
@@ -1421,8 +1719,8 @@ void CL_ParseServerMessage( msg_t *msg ) {
 			//CL_ParseGamestate( msg );
 			break;
 		case svc_snapshot: {
-			//CL_ParseSnapshot( msg );
-			cl.serverTime = MSG_ReadLong( msg );
+			CL_ParseSnapshot( msg );
+			/*cl.serverTime = MSG_ReadLong( msg );
 			//Com_Printf( "new server time: %d\n", cl.serverTime );
 			int deltaNum = MSG_ReadByte( msg );
 			if ( deltaNum > 0 ) {
@@ -1432,7 +1730,7 @@ void CL_ParseServerMessage( msg_t *msg ) {
 				clc.demowaiting = qfalse;	// we can start recording now
 			}
 			cl.snap.messageNum = clc.serverMessageSequence;
-			endOfParsing = qtrue;
+			endOfParsing = qtrue;*/
 			break;
 		}
 		case svc_setgame:
@@ -1440,8 +1738,8 @@ void CL_ParseServerMessage( msg_t *msg ) {
 			endOfParsing = qtrue;
 			break;
 		case svc_download:
-			//CL_ParseDownload( msg );
-			endOfParsing = qtrue;
+			CL_ParseDownload( msg );
+			//endOfParsing = qtrue;
 			break;
 		case svc_mapchange:
 			//if ( cls.cgameStarted )
@@ -1733,6 +2031,18 @@ const char *getPlayerTeamName( int playerIdx ) {
 }
 
 void CL_Disconnect_f( void ) {
+	Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "disconnect" );
+
+	while ( cls.realtime - lastCommandTime <= 1000 ) {
+		NET_Sleep( 1000 - ( cls.realtime - lastCommandTime ) );
+		cls.realtime = Com_Milliseconds();
+	}
+	//cls.realtime = Q_max( cls.realtime, lastCommandTime + 1001 );
+
+	CL_WritePacket();
+	CL_WritePacket();
+	CL_WritePacket();
+
 	if ( clc.demorecording ) {
 		CL_StopRecord_f();
 	}
