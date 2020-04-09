@@ -229,6 +229,7 @@ int Com_HashKey( char *string, int maxlen ) {
 CL_ConfigstringModified
 =====================
 */
+extern void DemoBot_IntermissionCSChanged_f( void );
 void CL_ConfigstringModified( void ) {
 	char		*old, *s;
 	int			i, index;
@@ -294,6 +295,10 @@ void CL_ConfigstringModified( void ) {
 		CL_SystemInfoChanged();
 	} else if ( index == CS_VOTE_STRING ) {
 		Com_Printf( "Vote: %s\n", s );
+	}
+	else if ( index == CS_INTERMISSION ) {
+		// CS_INTERMISSION just means that intermission starts in 1 sec
+		DemoBot_IntermissionCSChanged_f();
 	}
 }
 
@@ -1421,6 +1426,7 @@ void CL_ParseServerMessage( msg_t *msg ) {
 			clc.checksumFeed = MSG_ReadLong( msg );
 
 			CL_SystemInfoChanged();
+			DemoBot_IntermissionCSChanged_f();
 			CL_StopRecord_f();
 			CL_Record_f();
 			CL_WriteDemoMessage( msg, headerBytes );

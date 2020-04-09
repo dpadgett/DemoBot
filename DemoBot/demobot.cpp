@@ -642,14 +642,27 @@ void getEloUpdateStr( cJSON *player, eloStruct_t *elo ) {
 	free( (void *)decodedName );
 }
 
+int intermissionTime = -1;
+
+void DemoBot_IntermissionCSChanged_f( void ) {
+	const char *cs = cl.gameState.stringData + cl.gameState.stringOffsets[CS_INTERMISSION];
+	if ( atoi( cs ) != 0 ) {
+		// 1000 corresponds to INTERMISSION_DELAY_TIME
+		intermissionTime = cl.serverTime + 1000;
+	} else {
+		intermissionTime = -1;
+	}
+}
+
 bool stopRecord = false;
 void CG_ParseScores_f( void ) {
 	int redScore = atoi( Cmd_Argv( 2 ) );
 	int blueScore = atoi( Cmd_Argv( 3 ) );
 
 	printf( "Red: %d Blue: %d\n", redScore, blueScore );
-	const char *cs = cl.gameState.stringData + cl.gameState.stringOffsets[CS_INTERMISSION];
-	if ( atoi( cs ) != 0 ) {
+	//const char *cs = cl.gameState.stringData + cl.gameState.stringOffsets[CS_INTERMISSION];
+	//if ( atoi( cs ) != 0 ) {
+	if ( intermissionTime != -1 && cl.serverTime >= intermissionTime ) {
 		//Cmd_EndMatch_f( redScore, blueScore );
 		// stop the demo at this point so that we can get the metadata before map changes
 		//CL_StopRecord_f();
