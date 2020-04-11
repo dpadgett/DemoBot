@@ -324,7 +324,29 @@ int main( int argc, char **argv ) {
 				serverPasswords[j].address = strdup( address->valuestring );
 				serverPasswords[j].password = strdup( password->valuestring );
 				serverPasswords[j].rconpassword = strdup( rconPassword->valuestring );
-			}
+        // add this server to the whitelist as well
+        netadr_t serverAdr;
+        if ( !NET_StringToAdr( address->valuestring, &serverAdr ) ) {
+          Com_Printf( "Failed to resolve %s\n", address->valuestring );
+          continue;
+        }
+        int w = 0;
+        for ( ; w < sizeof( serverWhitelist ) / sizeof( *serverWhitelist ) && serverWhitelist[w] != nullptr; w++ ) {
+          netadr_t curServerAdr;
+          if ( !NET_StringToAdr( serverWhitelist[w], &curServerAdr ) ) {
+            Com_Printf( "Failed to resolve %s\n", serverWhitelist[w] );
+            continue;
+          }
+          if ( NET_CompareAdr( serverAdr, curServerAdr ) ) {
+            break;
+          }
+        }
+        if ( serverWhitelist[w] == nullptr ) {
+          serverWhitelist[w] = strdup( address->valuestring );
+					serverWhitelist[w + 1] = nullptr;
+          Com_Printf( "Whitelisted server %s\n", serverWhitelist[w] );
+				}
+      }
 		}
 		cJSON_Delete( root );
 	}
