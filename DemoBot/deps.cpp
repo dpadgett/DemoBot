@@ -1321,6 +1321,7 @@ void CL_Record_f( void ) {
 CL_ParseServerMessage
 =====================
 */
+int gamestateAckCmd = -1;
 void CL_ParseServerMessage( msg_t *msg ) {
 	int			cmd;
 
@@ -1431,10 +1432,24 @@ void CL_ParseServerMessage( msg_t *msg ) {
 			CL_Record_f();
 			CL_WriteDemoMessage( msg, headerBytes );
 			endOfParsing = qtrue;
+
+			// drop any further outstanding queued messages
+			clc.reliableSequence = Q_min( clc.reliableAcknowledge + 1, clc.reliableSequence );
+			gamestateAckCmd = ++clc.reliableSequence;
+			// send an empty client command so we know when server sees our gamestate ack
+			Com_sprintf( clc.reliableCommands[gamestateAckCmd & ( MAX_RELIABLE_COMMANDS - 1 )], MAX_STRING_CHARS, "\n" );
 			//CL_ParseGamestate( msg );
 			break;
 		case svc_snapshot: {
 			//CL_ParseSnapshot( msg );
+			// drop excessively large time reported at start of map
+      // server will send a large offset until it sees that we ack'ed the gamestate.
+      // we will know that this ack happened once it acks our empty gamestateAckCmd.
+			if ( clc.reliableAcknowledge < gamestateAckCmd ) {
+				Com_Printf( "Received big time %d at ack %d instead of %d\n", MSG_ReadLong( msg ), clc.reliableAcknowledge, gamestateAckCmd );
+				endOfParsing = qtrue;
+				break;
+			}
 			cl.serverTime = MSG_ReadLong( msg );
 			//Com_Printf( "new server time: %d\n", cl.serverTime );
 			int deltaNum = MSG_ReadByte( msg );

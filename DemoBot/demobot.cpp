@@ -1061,16 +1061,16 @@ int main( int argc, char **argv ) {
 		if ( cls.state == CA_CONNECTED ) {
 			qboolean disconnect = qfalse;
 			if ( cl.cmdNumber == 0 || cl.serverTime != cl.cmds[cl.cmdNumber & CMD_MASK].serverTime ) {
-				// send a new usercmd to server
-				cl.cmdNumber++;
-				cl.cmds[cl.cmdNumber & CMD_MASK] = {};
-				cl.cmds[cl.cmdNumber & CMD_MASK].serverTime = cl.serverTime;
-				//Com_Printf( "Sending usercmd\n" );
-				if ( cls.realtime - lastPovChangeTime > 90 * 1000 ) {
-					cl.cmds[cl.cmdNumber & CMD_MASK].buttons |= BUTTON_ATTACK;
-					Com_Printf( "Sending POV change\n" );
-					lastPovChangeTime = cls.realtime;
-				}
+        // send a new usercmd to server
+        cl.cmdNumber++;
+        cl.cmds[cl.cmdNumber & CMD_MASK] = {};
+        cl.cmds[cl.cmdNumber & CMD_MASK].serverTime = cl.serverTime;
+        //Com_Printf( "Sending usercmd\n" );
+        if ( cls.realtime - lastPovChangeTime > 90 * 1000 ) {
+          cl.cmds[cl.cmdNumber & CMD_MASK].buttons |= BUTTON_ATTACK;
+          Com_Printf( "Sending POV change\n" );
+          lastPovChangeTime = cls.realtime;
+        }
 				team_t curTeam = getPlayerTeam( clc.clientNum );
 				if ( curTeam != TEAM_SPECTATOR ) {
 					Com_Printf( "Not on spectator - on team %d, trying to switch!\n", curTeam );
@@ -1090,12 +1090,12 @@ int main( int argc, char **argv ) {
 						disconnect = qtrue;
 					}
 				}
-				CL_WritePacket();
 				if ( disconnect ) {
 					CL_Disconnect_f();
 				}
 			}
 		}
+		CL_WritePacket();
 		if ( cls.realtime - lastServerPacketTime > 60 * 1000 ) {
 			// no server packet in 60 seconds, assume we lost connection
 			Com_Printf( "Server packet timeout\n" );
