@@ -11,6 +11,11 @@
 #include "client/client.h"
 #include "cJSON.h"
 
+#ifndef WIN32
+typedef int SOCKET;
+#define INVALID_SOCKET                -1
+#endif
+
 static byte		sys_packetReceived[MAX_MSGLEN] = {};
 
 extern qboolean Sys_GetPacket( netadr_t *net_from, msg_t *net_message );  // in net_ip.cpp
@@ -1100,7 +1105,8 @@ int main( int argc, char **argv ) {
 			} else {
 				struct curl_waitfd waitfd = {};
 				waitfd.fd = ip_socket;
-				mc = curl_multi_wait( endmatchCurlm, &waitfd, 1, 100, &numfds );
+        waitfd.events = CURL_WAIT_POLLIN;
+				mc = curl_multi_wait( endmatchCurlm, &waitfd, 1, 1000, &numfds );
 			}
 			if ( mc != CURLM_OK ) {
 				Com_Printf( "curl_multi failed, code %d.\n", mc );
