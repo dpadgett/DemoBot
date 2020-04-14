@@ -747,7 +747,7 @@ int endmatchHandleCount;
 void CG_OnDemoFinish( const char *filename ) {
 	Com_Printf( "Demo index finished\n" );
 
-	if ( endmatchHandleCount > 0 ) {
+	if ( endmatchCurl != NULL ) {
 		Com_Printf( "Previous demo is still indexing! Skipping this one.\n" );
 	}
 
@@ -778,6 +778,8 @@ void CG_OnDemoFinish( const char *filename ) {
 		*buf << std::string( bdata, size * nmemb );
 		return size * nmemb;
 	} ) ); // Passing the function pointer to LC
+
+	curl_multi_add_handle( endmatchCurlm, endmatchCurl );
 }
 
 void CG_MatchIndexFinished( void ) {
@@ -1098,7 +1100,7 @@ int main( int argc, char **argv ) {
 			} else {
 				struct curl_waitfd waitfd = {};
 				waitfd.fd = ip_socket;
-				mc = curl_multi_wait( endmatchCurlm, &waitfd, 1, 1000, &numfds );
+				mc = curl_multi_wait( endmatchCurlm, &waitfd, 1, 100, &numfds );
 			}
 			if ( mc != CURLM_OK ) {
 				Com_Printf( "curl_multi failed, code %d.\n", mc );
