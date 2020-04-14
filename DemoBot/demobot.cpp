@@ -122,8 +122,8 @@ bool HttpPost( const char* url, const char* data, std::string* payload ) {
 		curl_easy_setopt( curl, CURLOPT_POSTFIELDS, data );
 	}
 	curl_easy_setopt( curl, CURLOPT_FOLLOWLOCATION, 1L );
-        // No call should take longer than 30 seconds.
-	curl_easy_setopt( curl, CURLOPT_TIMEOUT, 30L );
+	// No call should take longer than 90 seconds.
+	curl_easy_setopt( curl, CURLOPT_TIMEOUT, 90L );
 
 	std::stringstream buf;
 	curl_easy_setopt( curl, CURLOPT_WRITEDATA, (void *) &buf ); // Passing our BufferStruct to LC
@@ -659,7 +659,7 @@ void CG_ParseScores_f( void ) {
 	int redScore = atoi( Cmd_Argv( 2 ) );
 	int blueScore = atoi( Cmd_Argv( 3 ) );
 
-	printf( "Red: %d Blue: %d\n", redScore, blueScore );
+	Com_Printf( "Red: %d Blue: %d\n", redScore, blueScore );
 	//const char *cs = cl.gameState.stringData + cl.gameState.stringOffsets[CS_INTERMISSION];
 	//if ( atoi( cs ) != 0 ) {
 	if ( intermissionTime != -1 && cl.serverTime >= intermissionTime ) {
