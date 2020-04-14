@@ -298,6 +298,8 @@ void FindPopulatedServers( void ) {
 	}
 }
 
+void DemoBot_IntermissionCSChanged_f( void ) {}
+
 int main( int argc, char **argv ) {
 	if ( argc > 1 ) {
 		const char *configFile = argv[1];

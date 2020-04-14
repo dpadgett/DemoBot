@@ -739,8 +739,17 @@ void CG_MapRestart( void ) {
 	//CL_Record_f();
 }
 
+CURL *endmatchCurl = NULL;
+std::stringstream endmatchBuf;
+CURLM *endmatchCurlm;
+int endmatchHandleCount;
+
 void CG_OnDemoFinish( const char *filename ) {
 	Com_Printf( "Demo index finished\n" );
+
+	if ( endmatchHandleCount > 0 ) {
+		Com_Printf( "Previous demo is still indexing! Skipping this one.\n" );
+	}
 
 	char demoName[MAX_STRING_CHARS]; // = "/cygdrive/U/demos/demobot/mpctf_manaan 2016-03-22_14-55-21.dm_26";
 	Com_sprintf( demoName, sizeof( demoName ), "/cygdrive/%c%s", filename[0], &filename[2] );
@@ -750,11 +759,46 @@ void CG_OnDemoFinish( const char *filename ) {
 	char url[MAX_STRING_CHARS];
 	Com_sprintf( url, sizeof( url ), "https://demos.jactf.com/minrpc.php?rpc=endmatch&demo=%s", demoName );
 
-	std::string payload;
-	if ( !HttpGet( url, &payload ) ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "say \"Failed to connect to player database\"" );
+	endmatchCurl = curl_easy_init();
+	if ( !endmatchCurl ) {
 		return;
 	}
+
+	Com_Printf( "Url: %s\n", url );
+	curl_easy_setopt( endmatchCurl, CURLOPT_URL, url );
+	curl_easy_setopt( endmatchCurl, CURLOPT_FOLLOWLOCATION, 1L );
+	// No call should take longer than 90 seconds.
+	curl_easy_setopt( endmatchCurl, CURLOPT_TIMEOUT, 90L );
+
+	endmatchBuf.clear();
+	curl_easy_setopt( endmatchCurl, CURLOPT_WRITEDATA, (void *) &endmatchBuf ); // Passing our BufferStruct to LC
+	curl_easy_setopt( endmatchCurl, CURLOPT_WRITEFUNCTION, static_cast<size_t( QDECL * )( void*, size_t, size_t, void* )>( []( void *ptr, size_t size, size_t nmemb, void *data ) {
+		const char *bdata = static_cast<const char *>( ptr );
+		std::stringstream *buf = static_cast<std::stringstream *>( data );
+		*buf << std::string( bdata, size * nmemb );
+		return size * nmemb;
+	} ) ); // Passing the function pointer to LC
+}
+
+void CG_MatchIndexFinished( void ) {
+	long http_code = 0;
+	curl_easy_getinfo( endmatchCurl, CURLINFO_RESPONSE_CODE, &http_code );
+	if ( http_code != 200 && http_code != 204 ) {
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "say \"Failed to connect to player database\"" );
+
+		/* always cleanup */
+		endmatchCurl = NULL;
+		curl_easy_cleanup( endmatchCurl );
+
+		return;
+	}
+
+	std::string payload = endmatchBuf.str();
+	endmatchBuf.clear();
+
+	/* always cleanup */
+	endmatchCurl = NULL;
+	curl_easy_cleanup( endmatchCurl );
 
 	//Com_Printf( "Reply: %s\n", payload.c_str() );
 
@@ -956,6 +1000,7 @@ bool CG_FinishSendingDemo() {
 
 void CG_InitDemoSaving() {
 	curlm = curl_multi_init();
+	endmatchCurlm = curl_multi_init();
 }
 
 int main( int argc, char **argv ) {
@@ -1042,8 +1087,41 @@ int main( int argc, char **argv ) {
 	int lastPovChangeTime = cls.realtime - 88 * 1000;  // first pov switch will happen 2s after connect
 	int lastServerPacketTime = cls.realtime;
 	while ( cls.state != CA_DISCONNECTED ) {
+		if ( endmatchCurl == NULL ) {
+			NET_Sleep( 1000 );
+		} else {
+			CURLMcode mc;
+			int numfds;
+			extern SOCKET ip_socket;
+			if ( ip_socket == INVALID_SOCKET ) {
+				mc = curl_multi_wait( endmatchCurlm, NULL, 0, 1000, &numfds );
+			} else {
+				struct curl_waitfd waitfd = {};
+				waitfd.fd = ip_socket;
+				mc = curl_multi_wait( endmatchCurlm, &waitfd, 1, 1000, &numfds );
+			}
+			if ( mc != CURLM_OK ) {
+				Com_Printf( "curl_multi failed, code %d.\n", mc );
+				break;
+			}
+			// check the curl
+			mc = curl_multi_perform( endmatchCurlm, &endmatchHandleCount );
+
+			/* Check for errors */
+			if ( mc != CURLM_OK ) {
+				Com_Printf( "curl_multi_perform() failed: %s\n",
+					curl_multi_strerror( mc ) );
+				curl_easy_cleanup( endmatchCurl );
+				endmatchCurl = NULL;
+				break;
+			}
+
+			if ( endmatchHandleCount == 0 ) {
+				CG_MatchIndexFinished();
+			}
+		}
+
 		cls.realtime = Com_Milliseconds();
-		NET_Sleep( 1000 );
 		CL_CheckForResend();
 
 		netadr_t	adr;

@@ -97,7 +97,7 @@ static cvar_t	*net_port;
 
 static struct sockaddr	socksRelayAddr;
 
-static SOCKET	ip_socket = INVALID_SOCKET;
+/* static */ SOCKET	ip_socket = INVALID_SOCKET;
 static SOCKET	socks_socket = INVALID_SOCKET;
 
 #define	MAX_IPS		16
