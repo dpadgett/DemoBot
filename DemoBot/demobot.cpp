@@ -181,6 +181,16 @@ bool getUniqueId( int clientIdx, uint64_t* uniqueId ) {
 	return true;
 }
 
+bool getNewmodId( int clientIdx, const char** uniqueId ) {
+	const char *cs = cl.gameState.stringData + cl.gameState.stringOffsets[CS_PLAYERS + clientIdx];
+	const char *uniqueIdStr = Info_ValueForKey( cs, "cid" );
+	if ( uniqueIdStr == NULL || uniqueIdStr[0] == '\0' ) {
+		return false;
+	}
+	*uniqueId = uniqueIdStr;
+	return true;
+}
+
 const char *getName( int clientIdx ) {
 	const char *cs = cl.gameState.stringData + cl.gameState.stringOffsets[CS_PLAYERS + clientIdx];
 	return Info_ValueForKey( cs, "n" );
@@ -208,7 +218,13 @@ void Cmd_Who_f( const char *name, const char *msg ) {
 	uint64_t mask = ( ( ( (uint64_t) 1 ) << 32 ) - 1 );
 	// TESTING ONLY - sets it to ceasar's id
 	//uniqueId = ( 1560836804LL << 32LL ) | ( 8614LL );
-	Com_sprintf( url, sizeof( url ), "https://demos.jactf.com/playerrpc.php?rpc=searchplayer&id1=%d&id2=%d", static_cast<int>( ( uniqueId >> 32 ) & mask ), static_cast<int>( uniqueId & mask ) );
+  char newmodIdParam[256] = "\0";
+  const char *newmodId;
+  if ( getNewmodId( clientIdx, &newmodId ) ) {
+    Com_sprintf( newmodIdParam, sizeof( newmodIdParam ), "&newmod_id=%s", newmodId );
+  }
+  
+	Com_sprintf( url, sizeof( url ), "https://demos.jactf.com/playerrpc.py?rpc=searchplayer&ip=%d&guid=%d%s", static_cast<int>( ( uniqueId >> 32 ) & mask ), static_cast<int>( uniqueId & mask ), newmodIdParam );
 	if ( !HttpGet( url, &payload ) ) {
 		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "say \"Failed to connect to player database\"" );
 		return;
@@ -344,7 +360,7 @@ int eloSort( const void *a, const void *b ) {
 void PrintElos( eloStruct_t *elos, int count ) {
 	char *buf = NewClientCommand();
 	Com_sprintf( buf, MAX_STRING_CHARS, "say \"" );
-	int maxLineLen = strlen( "say \"\"" ) + 100;
+	unsigned int maxLineLen = strlen( "say \"\"" ) + 100;
 	for ( int eloIdx = 0; eloIdx < count; eloIdx++ ) {
 		eloStruct_t *elo = &elos[eloIdx];
 		char playerName[MAX_STRING_CHARS];
@@ -388,14 +404,18 @@ void Cmd_Elos_f( const char *name, const char *msg ) {
 		}
 		// TESTING ONLY - sets it to ceasar's id
 		//uniqueId = ( 1560836804LL << 32LL ) | ( 8614LL );
-		cJSON *player = cJSON_CreateArray();
-		cJSON_AddItemToArray( player, cJSON_CreateNumber( static_cast<int>( ( uniqueId >> 32 ) & mask ) ) );
-		cJSON_AddItemToArray( player, cJSON_CreateNumber( static_cast<int>( uniqueId & mask ) ) );
+		cJSON *player = cJSON_CreateObject();
+		cJSON_AddItemToObject( player, "ip", cJSON_CreateNumber( static_cast<int>( ( uniqueId >> 32 ) & mask ) ) );
+		cJSON_AddItemToObject( player, "guid", cJSON_CreateNumber( static_cast<int>( uniqueId & mask ) ) );
+    const char* newmodId = NULL;
+    if ( getNewmodId( clientIdx, &newmodId ) ) {
+      cJSON_AddItemToObject( player, "newmod_id", cJSON_CreateString( newmodId ) );
+    }
 		cJSON_AddItemToArray( players, player );
 	}
 
 	std::string payload;
-	const char *url = "https://demos.jactf.com/playerrpc.php?rpc=searchplayer";
+	const char *url = "https://demos.jactf.com/playerrpc.py?rpc=searchplayer";
 	char *data = cJSON_Print( players );
 	cJSON_Delete( players );
 	if ( !HttpPost( url, data, &payload ) ) {
@@ -444,13 +464,19 @@ typedef struct {
 teamSwitch_t teamSwitch;
 
 void Cmd_Teams_f( const char *name, const char *msg ) {
-	std::stringstream url;
-	url << "https://demos.jactf.com/playerrpc.php?rpc=teams";
+	const char *url = "https://demos.jactf.com/playerrpc.py?rpc=teams";
+  
+  cJSON *players = cJSON_CreateObject();
+  cJSON *redPlayersArr = cJSON_CreateArray();
+  cJSON *bluePlayersArr = cJSON_CreateArray();
+  cJSON_AddItemToObject( players, "red", redPlayersArr );
+  cJSON_AddItemToObject( players, "blue", bluePlayersArr );
 	std::vector<int> redPlayers, bluePlayers;
 	for ( int clientIdx = 0; clientIdx < MAX_CLIENTS; clientIdx++ ) {
 		if ( !playerActive( clientIdx ) ) {
 			continue;
 		}
+    cJSON *teamPlayers = NULL;
 		team_t team = getPlayerTeam( clientIdx );
 		switch ( team ) {
 		case TEAM_FREE:
@@ -459,9 +485,11 @@ void Cmd_Teams_f( const char *name, const char *msg ) {
 			continue;
 		case TEAM_RED:
 			redPlayers.push_back( clientIdx );
+      teamPlayers = redPlayersArr;
 			break;
 		case TEAM_BLUE:
 			bluePlayers.push_back( clientIdx );
+      teamPlayers = bluePlayersArr;
 			break;
 		}
 
@@ -472,12 +500,21 @@ void Cmd_Teams_f( const char *name, const char *msg ) {
 		}
 
 		uint64_t mask = ( ( ( (uint64_t) 1 ) << 32 ) - 1 );
-		url << "&" << getPlayerTeamName( clientIdx ) << "_id1[]=" << static_cast<int>( ( uniqueId >> 32 ) & mask );
-		url << "&" << getPlayerTeamName( clientIdx ) << "_id2[]=" << static_cast<int>( uniqueId & mask );
+
+    cJSON *player = cJSON_CreateObject();
+    cJSON_AddItemToObject( player, "ip", cJSON_CreateNumber( static_cast<int>( ( uniqueId >> 32 ) & mask ) ) );
+    cJSON_AddItemToObject( player, "guid", cJSON_CreateNumber( static_cast<int>( uniqueId & mask ) ) );
+    const char* newmodId = NULL;
+    if ( getNewmodId( clientIdx, &newmodId ) ) {
+      cJSON_AddItemToObject( player, "newmod_id", cJSON_CreateString( newmodId ) );
+    }
+    cJSON_AddItemToArray( teamPlayers, player );
 	}
 
 	std::string payload;
-	if ( !HttpGet( url.str().c_str(), &payload ) ) {
+	char *data = cJSON_Print( players );
+	cJSON_Delete( players );
+	if ( !HttpPost( url, data, &payload ) ) {
 		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "say \"Failed to connect to player database\"" );
 		return;
 	}
@@ -645,6 +682,15 @@ void getEloUpdateStr( cJSON *player, eloStruct_t *elo ) {
 	const char *decodedName = UTF8toCP1252( name->valuestring );
 	Q_strncpyz( elo->playerName, decodedName, sizeof( elo->playerName ) );
 	free( (void *)decodedName );
+	cJSON *team = cJSON_GetObjectItem( player, "team" );
+  elo->team = TEAM_SPECTATOR;
+  if ( !Q_stricmp( team->valuestring, "RED" ) ) {
+    elo->team = TEAM_RED;
+  } else if ( !Q_stricmp( team->valuestring, "BLUE" ) ) {
+    elo->team = TEAM_BLUE;
+  } else if ( !Q_stricmp( team->valuestring, "FREE" ) ) {
+    elo->team = TEAM_FREE;
+  }
 }
 
 int intermissionTime = -1;
@@ -668,6 +714,11 @@ void CG_ParseScores_f( void ) {
 	//const char *cs = cl.gameState.stringData + cl.gameState.stringOffsets[CS_INTERMISSION];
 	//if ( atoi( cs ) != 0 ) {
 	if ( intermissionTime != -1 && cl.serverTime >= intermissionTime ) {
+    if ( atoi( cl.gameState.stringData + cl.gameState.stringOffsets[CS_INTERMISSION] ) == 0 ) {
+      Com_Printf("Error - intermissionTime %d but not in intermission!\n", intermissionTime );
+      intermissionTime = -1;
+      return;
+    }
 		//Cmd_EndMatch_f( redScore, blueScore );
 		// stop the demo at this point so that we can get the metadata before map changes
 		//CL_StopRecord_f();
@@ -754,6 +805,7 @@ void CG_OnDemoFinish( const char *filename ) {
 
 	if ( endmatchCurl != NULL ) {
 		Com_Printf( "Previous demo is still indexing! Skipping this one.\n" );
+    return;
 	}
 
 	char demoName[MAX_STRING_CHARS]; // = "/cygdrive/U/demos/demobot/mpctf_manaan 2016-03-22_14-55-21.dm_26";
@@ -772,10 +824,11 @@ void CG_OnDemoFinish( const char *filename ) {
 	Com_Printf( "Url: %s\n", url );
 	curl_easy_setopt( endmatchCurl, CURLOPT_URL, url );
 	curl_easy_setopt( endmatchCurl, CURLOPT_FOLLOWLOCATION, 1L );
-	// No call should take longer than 90 seconds.
-	curl_easy_setopt( endmatchCurl, CURLOPT_TIMEOUT, 90L );
+	// No call should take longer than 180 seconds.
+	curl_easy_setopt( endmatchCurl, CURLOPT_TIMEOUT, 180L );
 
-	endmatchBuf.clear();
+  std::stringstream temp;
+  endmatchBuf.swap(temp);
 	curl_easy_setopt( endmatchCurl, CURLOPT_WRITEDATA, (void *) &endmatchBuf ); // Passing our BufferStruct to LC
 	curl_easy_setopt( endmatchCurl, CURLOPT_WRITEFUNCTION, static_cast<size_t( QDECL * )( void*, size_t, size_t, void* )>( []( void *ptr, size_t size, size_t nmemb, void *data ) {
 		const char *bdata = static_cast<const char *>( ptr );
@@ -788,6 +841,8 @@ void CG_OnDemoFinish( const char *filename ) {
 }
 
 void CG_MatchIndexFinished( void ) {
+	Com_Printf( "Match index finished: %s\n", endmatchBuf.str().c_str() );
+
 	long http_code = 0;
 	curl_easy_getinfo( endmatchCurl, CURLINFO_RESPONSE_CODE, &http_code );
 	if ( http_code != 200 && http_code != 204 ) {
@@ -801,7 +856,8 @@ void CG_MatchIndexFinished( void ) {
 	}
 
 	std::string payload = endmatchBuf.str();
-	endmatchBuf.clear();
+  std::stringstream temp;
+  endmatchBuf.swap(temp);
 
 	/* always cleanup */
 	endmatchCurl = NULL;
@@ -824,7 +880,7 @@ void CG_MatchIndexFinished( void ) {
 	Com_Printf( "%s", log->valuestring );
 
 	cJSON *is_match = cJSON_GetObjectItem( root, "is_match" );
-	if ( !is_match->valueint ) {
+	if ( !is_match || !is_match->valueint ) {
 		cJSON_Delete( root );
 		return;
 	}
@@ -839,10 +895,6 @@ void CG_MatchIndexFinished( void ) {
 		if ( rating != nullptr && client != nullptr ) {
 			eloStruct_t *elo = &elos[eloCount++];
 			elo->clientIdx = client->valueint;
-			elo->team = TEAM_SPECTATOR;
-			if ( playerActive( client->valueint ) ) {
-				elo->team = getPlayerTeam( client->valueint );
-			}
 			getEloUpdateStr( player, elo );
 		}
 	}
@@ -865,7 +917,7 @@ int handle_count;
 typedef struct demoUpload_s {
 	CURL *curl;
 	const char *buf;
-	int buflen;
+	unsigned int buflen;
 	bool eos;
 	std::stringstream obuf;
 } demoUpload_t;
@@ -943,7 +995,7 @@ bool CG_WriteDemoPacket( const char *buf, int buflen ) {
 		CURLMcode mres = curl_multi_perform( curlm, &handle_count );
 
 		/* Check for errors */
-		if ( mres != CURLE_OK ) {
+		if ( mres != CURLM_OK ) {
 			fprintf( stderr, "curl_multi_perform() failed: %s\n",
 				curl_multi_strerror( mres ) );
 			curl_easy_cleanup( upload->curl );
@@ -971,7 +1023,7 @@ bool CG_FinishSendingDemo() {
 		CURLMcode mres = curl_multi_perform( curlm, &handle_count );
 
 		/* Check for errors */
-		if ( mres != CURLE_OK ) {
+		if ( mres != CURLM_OK ) {
 			fprintf( stderr, "curl_multi_perform() failed: %s\n",
 				curl_multi_strerror( mres ) );
 			curl_easy_cleanup( upload->curl );
@@ -1085,7 +1137,11 @@ int main( int argc, char **argv ) {
 
 	Cmd_AddCommand( "connect", CL_Connect_f );
 	Cmd_AddCommand( "chat", chatCommand );
+	Cmd_AddCommand( "tchat", Cmd_Chat_f );
+	Cmd_AddCommand( "lchat", Cmd_Chat_f );
+	Cmd_AddCommand( "ltchat", Cmd_Chat_f );
 	Cmd_AddCommand( "cp", Cmd_Chat_f );
+	Cmd_AddCommand( "cps", Cmd_Chat_f );
 	Cmd_AddCommand( "cs", CL_ConfigstringModified );
 	Cmd_AddCommand( "disconnect", CL_Disconnect_f );
 	Cmd_AddCommand( "scores", CG_ParseScores_f );

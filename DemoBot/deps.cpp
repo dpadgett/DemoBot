@@ -2087,6 +2087,7 @@ qboolean CL_UpdateVisiblePings_f( int source ) {
 							cl_pinglist[j].start = Sys_Milliseconds();
 							cl_pinglist[j].time = 0;
 							NET_OutOfBandPrint( NS_CLIENT, cl_pinglist[j].adr, "getinfo xxx" );
+              Com_Printf( "Pinging server: %s in ping slot %d\n", NET_AdrToString( server[i].adr ), j );
 						}
 						slots++;
 					}

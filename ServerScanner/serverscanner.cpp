@@ -266,6 +266,7 @@ void FindPopulatedServers( void ) {
 				}
 			}
 			if ( humans > 0 ) {
+				Com_Printf( "Server %s (%s) has %d humans\n", server->hostName, NET_AdrToString( server->adr ), humans );
 				bool whitelisted = false;
 				for ( const auto& serverAddress : serverWhitelist ) {
 					if ( serverAddress == nullptr ) {
@@ -439,16 +440,16 @@ int main( int argc, char **argv ) {
 			CL_PacketEvent( adr, &netmsg );
 		}
 
-		if ( cls.realtime - lastMasterScanTime > 60 * 1000 ) {
-			Cmd_ExecuteString( va( "globalservers %d %d full empty", 0, PROTOCOL_VERSION ) );
-			Cmd_ExecuteString( va( "globalservers %d %d full empty", 0, PROTOCOL_VERSION - 1 ) );  // 1.0 servers, some are still there
+		if ( cls.realtime - lastMasterScanTime > 10 * 1000 ) {
+			//Cmd_ExecuteString( va( "globalservers %d %d full empty", 0, PROTOCOL_VERSION ) );
+			//Cmd_ExecuteString( va( "globalservers %d %d full empty", 0, PROTOCOL_VERSION - 1 ) );  // 1.0 servers, some are still there
 			lastMasterScanTime = cls.realtime;
       // Don't delete our manually added servers
       cls.numglobalservers = whitelistedServerCount;
+      for ( int i = 0; i < whitelistedServerCount; i++ ) {
+        cls.globalServers[i].ping = -1;
+      }
 		}
-    for ( int i = 0; i < whitelistedServerCount; i++ ) {
-      cls.globalServers[i].ping = -1;
-    }
 		CL_UpdateVisiblePings_f( AS_GLOBAL );
 		FindPopulatedServers();
 
