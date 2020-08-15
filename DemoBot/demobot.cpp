@@ -570,8 +570,18 @@ void Cmd_Teams_f( const char *name, const char *msg ) {
 		cJSON *bluePlayer = cJSON_GetArrayItem( playerSwitch, 1 );
 		int redClient = redPlayers[redPlayer->valueint];
 		int blueClient = bluePlayers[bluePlayer->valueint];
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "say \"Suggestion: switch ^7%s^2 with ^7%s^2\"",
-			getPlayerName( redClient ), getPlayerName( blueClient ) );
+    cJSON *switchProb = cJSON_GetObjectItem( root, "switchprob" );
+    // it is the probability for red to win
+    *winProbability = '\0';
+    if ( switchProb != NULL ) {
+      if ( switchProb->valuedouble >= 0.5 ) {
+        Com_sprintf( winProbability, sizeof( winProbability ), "^1%.2f^2 if you ", switchProb->valuedouble );
+      } else {
+        Com_sprintf( winProbability, sizeof( winProbability ), "^4%.2f^2 if you ", 1 - switchProb->valuedouble );
+      }
+    }
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "say \"Suggestion: %sswitch ^7%s^2 with ^7%s^2\"",
+			winProbability, getPlayerName( redClient ), getPlayerName( blueClient ) );
 		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "say \"Named players can say !a to execute\"" );
 		if ( redClient != teamSwitch.redIdx ) {
 			teamSwitch.redAccepted = qfalse;
