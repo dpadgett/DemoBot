@@ -1,4 +1,8 @@
 *.o
 DemoBot/demobot
+DemoBot/Debug
 ServerScanner/serverscanner
 ServerScanner/demobot
+ServerScanner/Debug
+Debug
+DemoBot/dl

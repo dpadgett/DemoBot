@@ -1717,6 +1717,19 @@ void StripColor( char *text ) {
 	*dst = 0;
 }
 
+// Unlike StripColor, it just changes all color codes in the name to match the given one.
+// Useful since StripColor's return value could still contain color codes, for example ^^00wl.'s name
+void SetColor( char* text, char desiredColor ) {
+	char* src = text, * dst = text;
+	while ( src[0] != '\0' ) {
+		if ( src[0] == '^' && ( src[1] >= '0' && src[1] <= '9' ) ) {
+			src[1] = desiredColor;
+		}
+		*dst++ = *src++;
+	}
+	*dst = 0;
+}
+
 void Cmd_Chat_f( void ) {
 	char msg[MAX_STRING_CHARS];
 	Q_strncpyz( msg, Cmd_Argv( 1 ), sizeof( msg ) );

@@ -369,7 +369,7 @@ void PrintElos( eloStruct_t *elos, int count ) {
 		} else {
 			Q_strncpyz( playerName, elo->playerName, sizeof( playerName ) );
 		}
-		StripColor( playerName );
+		SetColor( playerName, teamColor( elo->team )[1] );
 		char playerStr[MAX_STRING_CHARS];
 		int len = Com_sprintf( playerStr, sizeof( playerStr ), "%s%s (%s) ", teamColor( elo->team ), playerName, elo->eloStr );
 		if ( strlen( buf ) + len > maxLineLen || ( eloIdx > 0 && elo->team != elos[eloIdx - 1].team ) ) {
