@@ -12,6 +12,9 @@
 
 #ifdef _WIN32
 #include <windows.h>
+#else
+#include <unistd.h>
+#include <sys/wait.h>
 #endif
 
 static byte		sys_packetReceived[MAX_MSGLEN] = {};
@@ -93,13 +96,18 @@ static qboolean GetServerStatusInfo( const char *serverAddress, serverStatusInfo
 	return qfalse;
 }
 
-serverInfo_t launchedServers[1024];
+typedef struct connectedServerInfo_s {
+	serverInfo_t serverInfo;
+	int pid;
+} connectedServerInfo_t;
+
+connectedServerInfo_t launchedServers[1024];
 int numLaunchedServers = 0;
 
 qboolean RemoveServer( serverInfo_t *server ) {
 	for ( int idx = 0; idx < numLaunchedServers; idx++ ) {
-		if ( NET_CompareAdr( server->adr, launchedServers[idx].adr ) ) {
-			memmove( &launchedServers[idx], &launchedServers[idx + 1], sizeof( serverInfo_t ) * ( numLaunchedServers - idx - 1 ) );
+		if ( NET_CompareAdr( server->adr, launchedServers[idx].serverInfo.adr ) ) {
+			memmove( &launchedServers[idx], &launchedServers[idx + 1], sizeof( *launchedServers ) * ( numLaunchedServers - idx - 1 ) );
 			numLaunchedServers--;
 			return qtrue;
 		}
@@ -142,13 +150,13 @@ static const char *serverWhitelist[256] = {
 	nullptr,
 };
 
-void SpawnClient( const char* address ) {
+int SpawnClient( const char* address ) {
 	const char *password = nullptr;
 	const char *rconpassword = nullptr;
 	netadr_t adr;
 	if ( !NET_StringToAdr( address, &adr ) ) {
 		Com_Printf( "Failed to resolve %s\n", address );
-		return;
+		return -1;
 	}
 	for ( const auto& serverPassword : serverPasswords ) {
 		if ( serverPassword.address == nullptr ) {
@@ -212,15 +220,22 @@ void SpawnClient( const char* address ) {
 	// Cleanup
 	CloseHandle( ProcessInformation.hProcess );
 	CloseHandle( ProcessInformation.hThread );
+	return 0;
 #else
-	Q_strcat( command, sizeof( command ), " &" );
-	system(command);
+	pid_t child = fork();
+
+	if ( child != 0 ) {
+		return child;
+	}
+
+	execl( "/bin/bash", "-c", command, NULL );
+	return -1;
 #endif
 }
 
 qboolean AddServer( serverInfo_t *server ) {
 	for ( int idx = 0; idx < numLaunchedServers; idx++ ) {
-		if ( NET_CompareAdr( server->adr, launchedServers[idx].adr ) ) {
+		if ( NET_CompareAdr( server->adr, launchedServers[idx].serverInfo.adr ) ) {
 			return qfalse;
 		}
 		/*else if ( !strcmp( server->hostName, launchedServers[idx].hostName ) ) {
@@ -233,9 +248,10 @@ qboolean AddServer( serverInfo_t *server ) {
 		Com_Printf( "Connected to max %d servers\n", numLaunchedServers );
 		return qfalse;
 	}
-	launchedServers[numLaunchedServers] = *server;
+	connectedServerInfo_t *connectedServer = &launchedServers[numLaunchedServers];
+	connectedServer->serverInfo = *server;
 	numLaunchedServers++;
-	SpawnClient( NET_AdrToString( server->adr ) );
+	connectedServer->pid = SpawnClient( NET_AdrToString( server->adr ) );
 	return qtrue;
 }
 
