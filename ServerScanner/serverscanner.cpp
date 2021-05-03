@@ -228,7 +228,7 @@ int SpawnClient( const char* address ) {
 		return child;
 	}
 
-	execl( "/bin/bash", "-c", command, NULL );
+	execl( "/bin/bash", "bash", "-c", command, NULL );
 	return -1;
 #endif
 }
