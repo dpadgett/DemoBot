@@ -315,6 +315,20 @@ void FindPopulatedServers( void ) {
 	}
 }
 
+void ClearDisconnectedServers() {
+#ifndef _WIN32
+	for ( int idx = 0; idx < numLaunchedServers; idx++ ) {
+		int wstatus = 0;
+		if ( waitpid( launchedServers[idx].pid, &wstatus, WNOHANG ) == 0 ) {
+			continue;
+		}
+		memmove( &launchedServers[idx], &launchedServers[idx + 1], sizeof( *launchedServers ) * ( numLaunchedServers - idx - 1 ) );
+		numLaunchedServers--;
+		idx--;
+	}
+#endif
+}
+
 void DemoBot_IntermissionCSChanged_f( void ) {}
 
 int main( int argc, char **argv ) {
@@ -467,6 +481,8 @@ int main( int argc, char **argv ) {
       }
 		}
 		CL_UpdateVisiblePings_f( AS_GLOBAL );
+		// Clear any servers whos demobot crashed
+		ClearDisconnectedServers();
 		FindPopulatedServers();
 
 		NET_Sleep( 10000 );
