@@ -1083,8 +1083,6 @@ void CL_ParseCommandString( msg_t *msg ) {
 
 	index = seq & ( MAX_RELIABLE_COMMANDS - 1 );
 	Q_strncpyz( clc.serverCommands[index], s, sizeof( clc.serverCommands[index] ) );
-	Cmd_ExecuteString( s );
-	//Com_Printf( "command: %s\n", s );
 }
 
 /*
@@ -1480,6 +1478,14 @@ void CL_ParseServerMessage( msg_t *msg ) {
 		if ( endOfParsing ) {
 			break;
 		}
+	}
+	// logic to initiate clc.lastExecutedServerCommand
+	int start = Q_max( clc.lastExecutedServerCommand, clc.serverCommandSequence - MAX_RELIABLE_COMMANDS + 1 );
+	clc.lastExecutedServerCommand = start;
+	for ( ; clc.lastExecutedServerCommand <= clc.serverCommandSequence; clc.lastExecutedServerCommand++ ) {
+		char* command = clc.serverCommands[clc.lastExecutedServerCommand & ( MAX_RELIABLE_COMMANDS - 1 )];
+		Cmd_ExecuteString( command );
+		//Com_Printf( "command: %s\n", command );
 	}
 }
 
