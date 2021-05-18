@@ -50,10 +50,10 @@ enum {
 
 char *ChatStart( const int clientNum = CLIENT_NUM_DEFAULT ) {
 	if ( clientNum >= 0 && clientNum < MAX_CLIENTS && playerActive( clientNum ) )
-		return va( "tell %d \"", clientNum );
+		return va( "tell %d", clientNum );
 	if ( clientNum == CLIENT_NUM_TEAMCHAT  )
-		return "say_team \"";
-	return "say \"";
+		return "say_team";
+	return "say";
 }
 
 char *ColorStringFromChatType( const int clientNum = CLIENT_NUM_DEFAULT ) {
@@ -224,13 +224,13 @@ void Cmd_Who_f( const char *name, const char *msg, const int clientNum ) {
 	}
 	int clientIdx = SV_GetPlayerByHandle( playerName );
 	if ( clientIdx == -1 ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sUnknown client id for player %s%s\"", ChatStart( clientNum ), playerName, ColorStringFromChatType( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Unknown client id for player %s%s\"", ChatStart( clientNum ), playerName, ColorStringFromChatType( clientNum ) );
 		return;
 	}
 
 	uint64_t uniqueId;
 	if ( !getUniqueId( clientIdx, &uniqueId ) ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sUnknown unique id for player %d\"", ChatStart( clientNum ), clientIdx );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Unknown unique id for player %d\"", ChatStart( clientNum ), clientIdx );
 		return;
 	}
 
@@ -247,31 +247,31 @@ void Cmd_Who_f( const char *name, const char *msg, const int clientNum ) {
   
 	Com_sprintf( url, sizeof( url ), "https://demos.jactf.com/playerrpc.py?rpc=searchplayer&ip=%d&guid=%d%s", static_cast<int>( ( uniqueId >> 32 ) & mask ), static_cast<int>( uniqueId & mask ), newmodIdParam );
 	if ( !HttpGet( url, &payload ) ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sFailed to connect to player database\"", ChatStart( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Failed to connect to player database\"", ChatStart( clientNum ) );
 		return;
 	}
 
 	cJSON *root = cJSON_Parse( payload.c_str() );
 	if ( root == nullptr ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sCommunication with player database failed!\"", ChatStart( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Communication with player database failed!\"", ChatStart( clientNum ) );
 		return;
 	}
 	cJSON *results = cJSON_GetArrayItem( root, 0 );
 	cJSON *resultArr = cJSON_GetObjectItem( results, "result" );
 	if ( resultArr == nullptr ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sCommunication with player database failed!\"", ChatStart( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Communication with player database failed!\"", ChatStart( clientNum ) );
 		cJSON_Delete( root );
 		return;
 	}
 	if ( cJSON_GetArraySize( resultArr ) == 0 ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sUnknown player %s\"", ChatStart( clientNum ), playerName );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Unknown player %s\"", ChatStart( clientNum ), playerName );
 		cJSON_Delete( root );
 		return;
 	}
 	cJSON *result = cJSON_GetArrayItem( resultArr, 0 );
 	cJSON *nameJson = cJSON_GetObjectItem( result, "name" );
 	if ( nameJson == nullptr ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sCommunication with player database failed!\"", ChatStart( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Communication with player database failed!\"", ChatStart( clientNum ) );
 		cJSON_Delete( root );
 		return;
 	}
@@ -283,9 +283,9 @@ void Cmd_Who_f( const char *name, const char *msg, const int clientNum ) {
 		friendlyRatingJson = cJSON_GetObjectItem( ratingJson, "friendly" );
 	}
 	if ( friendlyRatingJson != nullptr ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sPlayer ^7%s%s: ^7%s%s, rating %d\"", ChatStart( clientNum ), playerName, ColorStringFromChatType( clientNum ), decodedRealName, ColorStringFromChatType( clientNum ), (int) ( friendlyRatingJson->valuedouble * 100 ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Player ^7%s%s: ^7%s%s, rating %d\"", ChatStart( clientNum ), playerName, ColorStringFromChatType( clientNum ), decodedRealName, ColorStringFromChatType( clientNum ), (int) ( friendlyRatingJson->valuedouble * 100 ) );
 	} else {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sPlayer ^7%s%s: ^7%s%s\"", ChatStart( clientNum ), playerName, ColorStringFromChatType( clientNum ), decodedRealName, ColorStringFromChatType( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Player ^7%s%s: ^7%s%s\"", ChatStart( clientNum ), playerName, ColorStringFromChatType( clientNum ), decodedRealName, ColorStringFromChatType( clientNum ) );
 	}
 	cJSON_Delete( root );
 	free( (void *) decodedRealName );
@@ -380,7 +380,7 @@ int eloSort( const void *a, const void *b ) {
 
 void PrintElos( eloStruct_t *elos, int count, const int clientNum = CLIENT_NUM_DEFAULT ) {
 	char *buf = NewClientCommand();
-	Com_sprintf( buf, MAX_STRING_CHARS, ChatStart( clientNum ) );
+	Com_sprintf( buf, MAX_STRING_CHARS, "%s \"", ChatStart( clientNum ) );
 	unsigned int maxLineLen = strlen(buf) + 1/*closing quote*/ + 100;
 	for ( int eloIdx = 0; eloIdx < count; eloIdx++ ) {
 		eloStruct_t *elo = &elos[eloIdx];
@@ -396,7 +396,7 @@ void PrintElos( eloStruct_t *elos, int count, const int clientNum = CLIENT_NUM_D
 		if ( strlen( buf ) + len > maxLineLen || ( eloIdx > 0 && elo->team != elos[eloIdx - 1].team ) ) {
 			Q_strcat( buf, MAX_STRING_CHARS, "\"" );
 			buf = NewClientCommand();
-			Com_sprintf( buf, MAX_STRING_CHARS, ChatStart( clientNum ) );
+			Com_sprintf( buf, MAX_STRING_CHARS, "%s \"", ChatStart( clientNum ) );
 		}
 		Q_strcat( buf, MAX_STRING_CHARS, playerStr );
 	}
@@ -408,7 +408,7 @@ void Cmd_Elos_f( const char *name, const char *msg, const int clientNum ) {
 
 	if ( cls.realtime - lastElosTime < 10000 ) {
 		int ago = cls.realtime - lastElosTime;
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sElos reported %d.%03ds ago\"", ChatStart(clientNum), ago / 1000, ago % 1000 );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Elos reported %d.%03ds ago\"", ChatStart(clientNum), ago / 1000, ago % 1000 );
 		//lastElosTime = cls.realtime;
 		return;
 	}
@@ -440,7 +440,7 @@ void Cmd_Elos_f( const char *name, const char *msg, const int clientNum ) {
 	char *data = cJSON_Print( players );
 	cJSON_Delete( players );
 	if ( !HttpPost( url, data, &payload ) ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sFailed to connect to player database\"", ChatStart( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Failed to connect to player database\"", ChatStart( clientNum ) );
 		free( data );
 		return;
 	}
@@ -449,7 +449,7 @@ void Cmd_Elos_f( const char *name, const char *msg, const int clientNum ) {
 	//printf( "Response: %s\n", payload.c_str() );
 	cJSON *root = cJSON_Parse( payload.c_str() );
 	if ( root == nullptr ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sCommunication with player database failed!\"", ChatStart( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Communication with player database failed!\"", ChatStart( clientNum ) );
 		printf( "Reply: %s\n", payload.c_str() );
 		return;
 	}
@@ -516,7 +516,7 @@ void Cmd_Teams_f( const char *name, const char *msg, const int clientNum ) {
 
 		uint64_t uniqueId = -1;
 		if ( !getUniqueId( clientIdx, &uniqueId ) ) {
-			Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sUnknown unique id for player %d\"", ChatStart( clientNum ), clientIdx );
+			Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Unknown unique id for player %d\"", ChatStart( clientNum ), clientIdx );
 			return;
 		}
 
@@ -536,40 +536,40 @@ void Cmd_Teams_f( const char *name, const char *msg, const int clientNum ) {
 	char *data = cJSON_Print( players );
 	cJSON_Delete( players );
 	if ( !HttpPost( url, data, &payload ) ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sFailed to connect to player database\"", ChatStart( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Failed to connect to player database\"", ChatStart( clientNum ) );
 		return;
 	}
 
 	cJSON *root = cJSON_Parse( payload.c_str() );
 	if ( root == nullptr ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sCommunication with player database failed!\"", ChatStart( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Communication with player database failed!\"", ChatStart( clientNum ) );
 		printf( "Reply: %s\n", payload.c_str() );
 		return;
 	}
 	cJSON *red = cJSON_GetObjectItem( root, "red" );
 	if ( red == nullptr ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sCommunication with player database failed!\"", ChatStart( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Communication with player database failed!\"", ChatStart( clientNum ) );
 		printf( "Reply: %s\n", payload.c_str() );
 		cJSON_Delete( root );
 		return;
 	}
 	cJSON *redRating = cJSON_GetObjectItem( red, "rating" );
 	if ( redRating == nullptr ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sCommunication with player database failed!\"", ChatStart( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Communication with player database failed!\"", ChatStart( clientNum ) );
 		printf( "Reply: %s\n", payload.c_str() );
 		cJSON_Delete( root );
 		return;
 	}
 	cJSON *blue = cJSON_GetObjectItem( root, "blue" );
 	if ( blue == nullptr ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sCommunication with player database failed!\"", ChatStart( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Communication with player database failed!\"", ChatStart( clientNum ) );
 		printf( "Reply: %s\n", payload.c_str() );
 		cJSON_Delete( root );
 		return;
 	}
 	cJSON *blueRating = cJSON_GetObjectItem( blue, "rating" );
 	if ( blueRating == nullptr ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sCommunication with player database failed!\"", ChatStart( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Communication with player database failed!\"", ChatStart( clientNum ) );
 		printf( "Reply: %s\n", payload.c_str() );
 		cJSON_Delete( root );
 		return;
@@ -581,7 +581,7 @@ void Cmd_Teams_f( const char *name, const char *msg, const int clientNum ) {
 	} else {
 		Com_sprintf( winProbability, sizeof( winProbability ), "^4%.2f%s", 1 - redWinProbability->valuedouble, ColorStringFromChatType( clientNum ) );
 	}
-	Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s^1Red%s: ^1%d%s, ^4Blue%s: ^4%d%s, Win probability %s\"",
+	Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"^1Red%s: ^1%d%s, ^4Blue%s: ^4%d%s, Win probability %s\"",
 		ChatStart( clientNum ),
 		ColorStringFromChatType( clientNum ),
 		(int) (redRating->valuedouble * 100), 
@@ -606,10 +606,10 @@ void Cmd_Teams_f( const char *name, const char *msg, const int clientNum ) {
         Com_sprintf( winProbability, sizeof( winProbability ), "^4%.2f%s if you ", 1 - switchProb->valuedouble, ColorStringFromChatType( clientNum ) );
       }
     }
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sSuggestion: %sswitch ^7%s%s with ^7%s%s\"",
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Suggestion: %sswitch ^7%s%s with ^7%s%s\"",
 			ChatStart( clientNum ),
 			winProbability, getPlayerName( redClient ), ColorStringFromChatType( clientNum ), getPlayerName( blueClient ), ColorStringFromChatType( clientNum ) );
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sNamed players can say !a to execute\"", ChatStart( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Named players can say !a to execute\"", ChatStart( clientNum ) );
 		if ( redClient != teamSwitch.redIdx ) {
 			teamSwitch.redAccepted = qfalse;
 		}
@@ -679,7 +679,7 @@ void Cmd_AcceptSwitch_f( const char *name, const char *msg, const int clientNum 
 	}
 	int clientIdx = SV_GetPlayerByHandle( playerName );
 	if ( clientIdx == -1 ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sUnknown client id for player %s%s\"", ChatStart( clientNum ), playerName, ColorStringFromChatType( clientNum ) );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Unknown client id for player %s%s\"", ChatStart( clientNum ), playerName, ColorStringFromChatType( clientNum ) );
 		return;
 	}
 	if ( getPlayerTeam( clientIdx ) == TEAM_BLUE && clientIdx == teamSwitch.blueIdx ) {
@@ -904,7 +904,7 @@ void CG_MatchIndexFinished( void ) {
 	long http_code = 0;
 	curl_easy_getinfo( endmatchCurl, CURLINFO_RESPONSE_CODE, &http_code );
 	if ( http_code != 200 && http_code != 204 ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sFailed to connect to player database\"", ChatStart() );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Failed to connect to player database\"", ChatStart() );
 
 		/* always cleanup */
 		endmatchCurl = NULL;
@@ -925,7 +925,7 @@ void CG_MatchIndexFinished( void ) {
 
 	cJSON *root = cJSON_Parse( payload.c_str() );
 	if ( root == nullptr ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sCommunication with player database failed!\"", ChatStart() );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Communication with player database failed!\"", ChatStart() );
 		printf( "Reply: %s\n", payload.c_str() );
 		cJSON_Delete( root );
 		return;
@@ -959,7 +959,7 @@ void CG_MatchIndexFinished( void ) {
 	// sort
 	qsort( &elos[0], eloCount, sizeof( elos[0] ), eloSort );
 	if ( eloCount > 0 ) {
-		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%sPlayer elo updates:\"", ChatStart() );
+		Com_sprintf( NewClientCommand(), MAX_STRING_CHARS, "%s \"Player elo updates:\"", ChatStart() );
 		PrintElos( elos, eloCount );
 	}
 	cJSON_Delete( root );
