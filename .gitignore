@@ -6,3 +6,6 @@ ServerScanner/demobot
 ServerScanner/Debug
 Debug
 DemoBot/dl
+*.obj
+/.vs/DemoBot/v16
+/ServerScanner/ServerScanner.vcxproj.user

@@ -1307,6 +1307,6 @@ int main( int argc, char **argv ) {
 			CL_Disconnect_f();
 		}
 	}
-	system( "PAUSE" );
+	//system( "PAUSE" );
 	return 0;
 }
