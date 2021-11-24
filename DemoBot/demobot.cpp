@@ -1291,6 +1291,11 @@ int main( int argc, char **argv ) {
 					}
 				}
 				if ( disconnect ) {
+					if ( argc >= 4 ) {
+						// if we have rcon and server is empty, restart it as we leave
+						Com_Printf( "Restarting server\n" );
+						CL_Rcon_f( "quit" );
+					}
 					CL_Disconnect_f();
 				}
 			}
@@ -1302,6 +1307,6 @@ int main( int argc, char **argv ) {
 			CL_Disconnect_f();
 		}
 	}
-	//system( "PAUSE" );
+	system( "PAUSE" );
 	return 0;
 }
